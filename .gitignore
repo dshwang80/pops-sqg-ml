@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Outputs (generated)
+python/output/
+python/figures/
+R_output/
+
+# OS
+.DS_Store
