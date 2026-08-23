@@ -1,0 +1,133 @@
+SpeciesCode,SpeciesName,GroupName,CommonName
+101L,Human liver cell line,Tissue Culture,Cell line
+AA,Ampelisca abdita,Amphipod,Amphipod
+AAF,Atherinops affinis,Fish,Topsmelt
+AB,Armandia brevis,Polychaete,Worm
+ACC,Acanthomysis costata,Crustacean (Mysid),Shrimp
+AP,Arbacia punctulata,Echinoderm,Purple-spined sea urchin
+AT,Amphiascus tenuiremis,Zooplankton (Copepod),Copepod
+AV,Ampelisca verrilli,Amphipod,Amphipod
+BAYSH,Crangon franciscorum,Crustacean (Decapod),Bay shrimp
+BL,Embiotoca jacksoni,Fish,Black surfperch
+BNMUS,Musculista senhousia,Mollusc (Bivalve),Asian mussel
+BSHR,Mustelus henlei,Fish,Brown Smooth-Hound shark
+CA,Corophium acherusicum,Amphipod,Amphipod
+CARP,Cyprinus carpio,Fish,Common Carp
+CD,Ceriodaphnia dubia,Zooplankton (Cladoceran),Water Flea
+CF,Corbicula fluminea,Mollusc (Bivalve),Asian clam
+CHAL,Paralichthys californicus,Fish,California Halibut
+CI,Citharichthys stigmaeus,Fish,Speckled Sanddab
+CLAM,Bivalve - clams,Mollusc (Bivalve),"Clams, unspecified"
+CR,Chironomus riparius,Insect,Midge
+CRAB,"Crabs, unspecified",Crustacean (Decapod),"Crabs, unspecified"
+CS,Corophium spinicorne,Amphipod,Amphipod
+CT,Chironomus tentans,Insect,Midge
+CV,Corophium volutator,Amphipod,Amphipod
+DE,Dendraster excentricus,Echinoderm,Sand dollar
+DM,Daphnia magna,Zooplankton (Cladoceran),Water Flea
+DP,Daphnia pulex,Zooplankton (Cladoceran),Water Flea
+DS,Diporeia sp.,Amphipod,Amphipod
+DSRF,Micrometrus minimus,Fish,Dward Surfperch
+EE,Eohaustorius estuarius,Amphipod,Amphipod
+EELG,Zostera marina,Plant,Eelgrass
+EF,Eisenia foetida,Oligochaete,Worm
+EM,Engraulis mordax,Fish,Northern anchovy
+EU,Echinoderm  (species not known),Echinoderm,"Echinoderms, unspecified"
+FRAGE,Forage Fish,Fish,"Forage fish, unspecified"
+GAST,Gasterosteus aculeatus,Fish,Three-spined Stickleback
+GJ,Grandidierella japonica,Amphipod,Amphipod
+GL,Gammarus lacustris,Amphipod,Amphipod
+GO,Carassius auratus,Fish,Goldfish
+GOB,Gobiidae,Fish,Gobies
+GP,Gonyaulax polyedra,Plant,Dinoflagellate
+HA,Hyalella azteca,Amphipod,Amphipod
+HC,Holmesimysis costata,Crustacean (Mysid),Shrimp
+HEPG,RGS cell line,Tissue Culture,Cell line
+HL,Hexagenia limbata,Insect,Mayfly
+HR,Haliotis rufescens,Mollusc (Gastropod),Red abalone
+HS,Holmesimysis sculpta,Crustacean (Mysid),Shrimp
+HX,Hexagenia sp.,Insect,Mayfly
+JA,Atherinopsis californiensis,Fish,Jacksmelt
+LD,Lepidactylus dytiscus,Amphipod,Amphipod
+LEOP,Triakis semifiate,Fish,Leopard shark
+LEPL,Lepidogobius lepidus,Fish,Bay gobi
+LEPT,Leptocottus armatus,Fish,Pacific Staghorn Sculpin
+LH,Limnodrilus hoffmeisteri,Oligochaete,Worm
+LONS,Citharichthys xanthostigma,Fish,Longfin Sanddab
+LP,Leptocheirus plumulosus,Amphipod,Amphipod
+LS,Lactuca sativa,Plant,Lettuce
+LV,Lumbriculus variegatus,Oligochaete,California Blackworm
+LY,Lytechinus pictus,Echinoderm,Sea urchin
+MA,Mysidopsis almyra,Crustacean (Mysid),Opposum Shrimp
+MB,Mysidopsis bahia,Crustacean (Mysid),Shrimp
+MBAL,Macoma balthica,Mollusc (Bivalve),Baltic Macoma
+MBE,Menidia beryllina,Fish,Inland Silverside
+MC,Mytilus californianus,Mollusc (Bivalve),California Mussel
+ME,Mytilus edulis,Mollusc (Bivalve),Blue Mussel
+MG,Mytilus galloprovincialis,Mollusc (Bivalve),Mediterranean mussel 
+ML,Mulinia lateralis,Mollusc (Bivalve),Dwarf Surfclam
+MM,Mercenaria mercenaria,Mollusc (Bivalve),Northern quahog clam
+MN,Macoma nasuta,Mollusc (Bivalve),Bent-nose Macoma clam
+MS,Micropterus salmoides,Fish,Largemouth Bass
+MU,"Mytilus spp, undetermined",Mollusc (Bivalve),Mussel
+MULT,Multiple or mixed species,Misc,Multiple or mixed species
+MUS,"Mussels, unspecified",Mollusc (Bivalve),"Mussels, unspecified"
+MY,Mya arenaria,Mollusc (Bivalve),Softshell Clam
+NA,Neanthes arenaceodentata,Polychaete,Worm
+NC,Nephtys caecoides,Polychaete,Worm
+NP,Nebalia pugettensis,Crustacean (Leptostracan),Leptostracan
+NR,Not reported or not applicable,Misc,Not reported or not applicable
+NS,Neanthes sp.,Polychaete,Worm
+NV,Neanthes virens,Polychaete,Clam Worm
+OLIG,Oligocottus rimensis,Fish,Saddleback Sculpin
+OM,Oncorhynchus mykiss,Fish,Rainbow Trout
+OY,Crassostrea gigas,Mollusc (Bivalve),Pacific Oyster
+OYS,"Oysters, unspecified",Mollusc (Bivalve),"Oysters, unspecified"
+PA,Panope generosa,Mollusc (Bivalve),Geoduck Clam
+PACS,Citharichthys sordidus,Fish,Pacific Sanddab
+PAMU,Potamocorbula amurensis,Mollusc (Bivalve),Asian clam
+PB,Photobacterium phosphoreum,Bacteria,Bacteria
+PD,Penaeus duorarum,Crustacean (Decapod),Decapod
+PE,"Perch, unspecified",Fish,"Perch, generic"
+PF,Pyrocystis fusiformis,Plant,Dinoflagellate
+PFIM,Pachycerianthus fimbriatus,Cnidarian,Burrowing Tube Anemone
+PG,Physa gyrina,Mollusc (Gastropod),Pond snail
+PH,Pontoporeia hoyi,Amphipod,Amphipod
+PI,Pimephales promelas,Fish,Fathead Minnow
+PL,Pyrocystis lunula,Plant,Dinoflagellate
+PNEB,Paralabrax nebulifer,Fish,Barred Sand Bass
+PP,Palaemonetes pugio,Crustacean (Decapod),Grass shrimp
+PR,Paratanytarsus parthenogenica,Insect,Midge
+PS,Protothaca staminea,Mollusc (Bivalve),Pacific Littleneck clam
+PSTL,Platichthys stellatus,Fish,Starry Founder
+PU,Procambarus sp.,Crustacean (Decapod),Speckled Crayfish
+PV,Parophrys vetulus,Fish,English Sole
+PW,Paronychocamptus wilsoni,Zooplankton (Copepod),Copepod
+RA,Rhepoxynius abronius,Amphipod,Amphipod
+RC,Rangia cuneata,Mollusc (Bivalve),Common Rangia clam
+RH,Rhepoxynius hudsoni,Amphipod,Amphipod
+ROCK,Cancer antennarius,Crustacean (Decapod),Pacific Rock Crab
+RP,Rana pipiens,Amphibian,Northern Leopard Frog
+RRC,Plagusia chabrus,Crustacean (Decapod),Red Rock Crab
+SB,Streblospio benedicti,Polychaete,Worm
+SH,Stylodrilus heringianus,Oligochaete,Worm
+SLSO,Eopsetta exilis,Fish,Slender Sole
+SP,Strongylocentrotus purpuratus,Echinoderm,Purple Sea Urchin
+SPER,Embiotocidae,Fish,"Surfperches, generic"
+SPLBS,Panulirus interruptus,Crustacean (Decapod),California Spiny Lobster
+SR,Urolophus halleri,Fish,Round Stingray
+SSB,Paralabrax maculatofasciatus,Fish,Spotted Sand Bass
+STB,Morone saxatilis,Fish,Striped Bass
+STUR,Acipenser transmontanus,Fish,White Sturgeon
+SU,Sphaerium sp.,Mollusc (Bivalve),Pea Clam
+SURF,Cymatogaster aggregata,Fish,Shiner Surfperch
+SYMP,Symphurus atricauda,Fish,California Tonguefish
+TC,Tigriopus californicus,Zooplankton (Copepod),Copepod
+TD,Truncilla donaciformis,Mollusc (Bivalve),Fawnsfoot Mussel
+TJ,Tapes japonica,Mollusc (Bivalve),Manila clam
+TT,Tubifex tubifex,Oligochaete,Sludge Worm
+VF,Vibrio fisheri,Bacteria,Bacteria
+WA,Hyperprosopon argenteum,Fish,Walleye surfperch
+WCRK,Genyonemus lineatus,Fish,White Croaker
+WORM,"Worms, unspecified",Polychaete,"Worms, unspecified"
+WSRF,Phanerodon furcatus,Fish,White Surfperch

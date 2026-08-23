@@ -1,0 +1,643 @@
+ChemicalName,Description,ChemicalGroup,SolidUnits,WaterUnits,CASNum,Sum
+"1,1,1-Trichloroethane",,Volatile,UG/KG,UG/L,71-55-6,
+"1,1,2,2-Tetrachloroethane",,Volatile,UG/KG,UG/L,79-34-5,
+"1,1,2-Trichloroethane",,Volatile,UG/KG,UG/L,79-00-5,
+"1,1,2-Trichloroethylene",,Volatile,UG/KG,UG/L,79-01-6,
+"1,1'-Dichloroethane",,Volatile,UG/KG,UG/L,75-34-3,
+"1,1'-Dichloroethene",,Volatile,UG/KG,UG/L,75-35-4,
+"1,2,3,4,6,7,8-HpCDD","1,2,3,4,6,7,8-Heptachlorodibenzodioxin",Dioxin/Furan,NG/KG,NG/L,35822-46-9,
+"1,2,3,4,6,7,8-HpCDF","1,2,3,4,6,7,8-Heptachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,67562-39-4,
+"1,2,3,4,7,8,9-HpCDF","1,2,3,4,7,8,9-Heptachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,55673-89-7,
+"1,2,3,4,7,8-HxCDD","1,2,3,4,7,8-hexachlorodibenzo[b,e][1,4]dioxin",Dioxin/Furan,NG/KG,NG/L,39227-28-6,
+"1,2,3,4,7,8-HxCDF","1,2,3,4,7,8-hexachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,70648-26-9,
+"1,2,3,6,7,8-HxCDD","1,2,3,6,7,8-Hexachlorodibenzo-p-dioxin",Dioxin/Furan,NG/KG,NG/L,57653-85-7,
+"1,2,3,6,7,8-HxCDF","1,2,3,6,7,8-Hexachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,57117-44-9,
+"1,2,3,7,8,9-HxCDD","1,2,3,7,8,9-Hexachlorodibenzo-p-dioxin",Dioxin/Furan,NG/KG,NG/L,19408-74-3,
+"1,2,3,7,8,9-HxCDF","1,2,3,7,8,9-Hexachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,72918-21-9,
+"1,2,3,7,8-PeCDD","1,2,3,7,8-Pentachlorodibenzo-p-dioxin",Dioxin/Furan,NG/KG,NG/L,40321-76-4,
+"1,2,3,7,8-PeCDF","1,2,3,7,8-Pentachlorodibenzofuran",Dioxin/Furan,NG/KG,NG/L,57117-41-6,
+"1,2,4,5-Tetrachlorobenzene",,Semivol,UG/KG,UG/L,95-94-3,
+"1,2,4-Trichlorobenzene",,Semivol,UG/KG,UG/L,120-82-1,
+"1,2-Dichlorobenzene",,Semivol,UG/KG,UG/L,95-50-1,
+"1,2-Dichloroethane",,Volatile,UG/KG,UG/L,107-06-2,
+"1,2-Dichloropropane",,Volatile,UG/KG,UG/L,78-87-5,
+"1,2-Dinitrobenzene",,Semivol,UG/KG,UG/L,528-29-0,
+"1,2-Diphenylhydrazine",,Semivol,UG/KG,UG/L,122-66-7,
+"1,3,5-Trinitrobenzene",,Semivol,UG/KG,UG/L,99-35-4,
+"1,3-Dichlorobenzene",,Semivol,UG/KG,UG/L,541-73-1,
+"1,3-Dichloropropylene",,Volatile,UG/KG,UG/L,542-75-6,
+"1,3-Dinitrobenzene",,Semivol,UG/KG,UG/L,99-65-0,
+"1,4-Cyclohexadienedione",,Volatile,UG/KG,UG/L,589-90-2,
+"1,4-Dichlorobenzene",,Semivol,UG/KG,UG/L,106-46-7,
+"1,4-Dinitrobenzene",,Semivol,UG/KG,UG/L,100-25-4,
+"1,4-Naphthoquinone",,Semivol,UG/KG,UG/L,130-15-4,
+"1,4-Phenylenediamine",para-Phenylenediamine,Semivol,UG/KG,UG/L,106-50-3,
+"1,6,7-Trimethylnaphthalene","2,3,5-Trimethylnaphthalene is synonym",PAH,UG/KG,UG/L,2245-38-7,
+11H-Benzo[b]fluorene,"2,3-Benzofluorene is synonym",PAH,UG/KG,UG/L,243-17-4,
+1-Chloronaphthalene,,Semivol,UG/KG,UG/L,90-13-1,
+1-Methylnaphthalene,,PAH,UG/KG,UG/L,90-12-0,LPAH
+1-Methylphenanthrene,,PAH,UG/KG,UG/L,832-69-9,LPAH
+1-Methylpyrene,,PAH,UG/KG,UG/L,2381-21-7,
+1-Naphthylamine,,Semivol,UG/KG,UG/L,134-32-7,
+"2,3,4,6,7,8-HxCDF",,Dioxin/Furan,NG/KG,NG/L,60851-34-5,
+"2,3,4,6-Tetrachlorophenol",,Phenol,UG/KG,UG/L,58-90-2,
+"2,3,4,7,8-PeCDF",,Dioxin/Furan,NG/KG,NG/L,57117-31-4,
+"2,3,6-Trichlorophenol",,Phenol,UG/KG,UG/L,93-37-55,
+"2,3,6-Trimethylnaphthalene",,PAH,UG/KG,UG/L,829-26-5,
+"2,3,7,8-TCDD","Dioxin (2,3,7,8-Tetrachlorodibenzo-p-Dioxin)",Dioxin/Furan,NG/KG,NA,1746-01-6,
+"2,3,7,8-TCDF","Furan (2,3,7,8-Tetrachlorodibenzofuran)",Dioxin/Furan,NG/KG,NA,51207-31-9,
+"2,3-Benzofluorene",11H-Benzo[b]fluorene is synonym,PAH,UG/KG,UG/L,243-17-4,
+"2,4,5-Trichlorophenol",,Phenol,UG/KG,UG/L,95-95-4,
+"2,4,5-Trimethylaniline",,Semivol,UG/KG,UG/L,137-17-7,
+"2,4,6-Tribromophenol",,Phenol,UG/KG,UG/L,118-79-6,
+"2,4,6-Trichlorophenol",,Phenol,UG/KG,UG/L,88-06-2,
+"2,4-D","2,4-dichlorophenoxyacetic acid",Pesticide,UG/KG,UG/L,94-75-7,
+"2,4-DB","2,4-dichlorophenoxybutyric acid",Pesticide,UG/KG,UG/L,94-82-6,
+"2,4'-DDD","1,1-Dichloro-2,2-bis(2,4'-dichlorophenyl)ethane",Pesticide,UG/KG,UG/L,53-19-0,DDT
+"2,4'-DDE","1,1-Dichloro-2-(o-chlorophenyl)-2-(p-chlorophenyl) ethylene",Pesticide,UG/KG,UG/L,3424-82-6,DDT
+"2,4'-DDT","1-(2-Chlorophenyl)-1-(4-chlorophenyl)-2,2,2-trichloroethane",Pesticide,UG/KG,UG/L,789-02-6,DDT
+"2,4-Dichlorophenol",,Phenol,UG/KG,UG/L,120-83-2,
+"2,4-Dimethylphenol",,Phenol,UG/KG,UG/L,105-67-9,
+"2,4-Dinitrophenol",,Phenol,UG/KG,UG/L,51-28-5,
+"2,4-Dinitrotoluene",,Semivol,UG/KG,UG/L,121-14-2,
+"2,6-Dichlorophenol",,Phenol,UG/KG,UG/L,87-65-0,
+"2,6-Dimethylnaphthalene",,PAH,UG/KG,UG/L,581-42-0,LPAH
+"2,6-Dinitrophenol",,Phenol,UG/KG,UG/L,573-56-8,
+"2,6-Dinitrotoluene",,Semivol,UG/KG,UG/L,606-20-2,
+2-Acetylaminofluorene,,Semivol,UG/KG,UG/L,53-96-3,
+2-Chloroaniline,,Semivol,UG/KG,UG/L,95-51-2,
+2-Chloroethylvinyl ether,,Volatile,UG/KG,UG/L,110-75-8,
+2-Chloronaphthalene,,Semivol,UG/KG,UG/L,91-58-7,
+2-Chlorophenol,o-Chlorophenol is a synonym,Phenol,UG/KG,UG/L,95-57-8,
+2-Hexanone,,Semivol,UG/KG,UG/L,591-78-6,
+2-Methylanthracene,Alkyl PAH,PAH,UG/KG,UG/L,613-12-7,
+2-Methylnaphthalene,,PAH,UG/KG,UG/L,91-57-6,LPAH
+2-Methylphenanthrene,Metphenany,PAH,UG/KG,UG/L,2531-84-2,
+2-Methylphenol,o-Cresol is a synonym,Phenol,UG/KG,UG/L,95-48-7,
+2-Naphthylamine,,Semivol,UG/KG,UG/L,91-59-8,
+2-Nitroaniline,,Semivol,UG/KG,UG/L,88-74-4,
+2-Nitrophenol,,Phenol,UG/KG,UG/L,88-75-5,
+2-Picoline,,Semivol,UG/KG,UG/L,109-06-8,
+"3,3'-Dichlorobenzidine",,Semivol,UG/KG,UG/L,91-94-1,
+"3,3'-Dimethylbenzidine",,Semivol,UG/KG,UG/L,119-93-7,
+"3,6-Dimethylphenanthrene",,PAH,UG/KG,UG/L,1576-67-6,
+3-Methylcholanthrene,,Semivol,UG/KG,UG/L,56-49-5,
+3-Methylphenol,m-Cresol is a synonym,Phenol,UG/KG,UG/L,108-39-4,
+3-Nitroaniline,,Semivol,UG/KG,UG/L,99-09-2,
+"4,4'-DDD",Dichlorodiphenyldichloroethane,Pesticide,UG/KG,UG/L,72-54-8,DDT
+"4,4'-DDE","1,1-dichloro-2,2-bis(p-chlorophenyl)ethylene",Pesticide,UG/KG,UG/L,72-55-9,DDT
+"4,4'-DDT","1,1,1-Trichloro-2,2-bis(p-chlorophenyl)ethane",Pesticide,UG/KG,UG/L,50-29-3,DDT
+"4,4-Oxydianiline",,Semivol,UG/KG,UG/L,101-80-4,
+"4,6-Dinitro-2-methylphenol",,Phenol,UG/KG,UG/L,534-52-1,
+4-Aminobiphenyl,,Semivol,UG/KG,UG/L,92-67-1,
+4-Bromophenyl phenyl ether,,Semivol,UG/KG,UG/L,101-55-3,
+4-Chloro-3-methylphenol,PCMC is a synonym,Phenol,UG/KG,UG/L,59-50-7,
+4-Chloroaniline,,Semivol,UG/KG,UG/L,106-47-8,
+4-Chlorophenyl phenyl ether,,Semivol,UG/KG,UG/L,7005-72-3,
+4-Methylphenol,p-Cresol is a synonym,Phenol,UG/KG,UG/L,106-44-5,
+4-Nitroaniline,,Semivol,UG/KG,UG/L,100-01-6,
+4-Nitrobiphenyl,,Semivol,UG/KG,UG/L,92-93-3,
+4-Nitrophenol,,Phenol,UG/KG,UG/L,100-02-7,
+5-Nitroacenaphthene,,Semivol,UG/KG,UG/L,602-87-9,
+5-Nitro-o-toluidine,,Semivol,UG/KG,UG/L,99-55-8,
+6-Dimethylnaphthalene,Alkyl PAH,PAH,UG/KG,UG/L,NF,
+"7,12-Dimethylbenz(a)anthracene",,PAH,UG/KG,UG/L,57-97-6,
+"9,10-Diphenylanthracene",Alkyl PAH,PAH,UG/KG,UG/L,1499-10-1,
+"a-,a-Dimethylphenethylamine","1,1-Dimethyl-2-phenylethylamine",Semivol,UG/KG,UG/L,122-09-8,
+Acenaphthene,,PAH,UG/KG,UG/L,83-32-9,LPAH
+Acenaphthylene,,PAH,UG/KG,UG/L,208-96-8,
+Acetone,,Volatile,UG/KG,UG/L,67-64-1,
+Acetophenone,,Semivol,UG/KG,UG/L,98-86-2,
+Acridine,,Volatile,UG/KG,UG/L,260-94-6,
+Acrolein,,Volatile,UG/KG,UG/L,107-02-8,
+Acrylonitrile,,Volatile,UG/KG,UG/L,107-13-1,
+Aldrin,,Pesticide,UG/KG,UG/L,309-00-2,
+alpha-BHC,,Pesticide,UG/KG,UG/L,319-84-6,
+alpha-Chlordane,,Pesticide,UG/KG,UG/L,5103-71-9,CHLORDANE
+alpha-Chlordene,Of tech. Chlordane,Pesticide,UG/KG,UG/L,56534-02-2,CHLORDANE
+Aluminum,,Metal,MG/KG,UG/L,7429-90-5,
+Aluminum SEM,Simultaneously extracted Al,AVS/SEM,µmoles/g,NA,NA,
+Ammonia,Total ammonia,Nutrient,MG/L,MG/L,NA,
+Aniline,,Semivol,UG/KG,UG/L,62-53-3,
+Anthracene,,PAH,UG/KG,UG/L,120-12-7,LPAH
+Antimony,,Metal,MG/KG,UG/L,7440-36-0,
+Antimony SEM,Simultaneously extracted Sb,AVS/SEM,µmoles/g,NA,NA,
+Aroclor 1016,,PCB Aroclors,UG/KG,UG/L,12674-11-2,PCB_AR
+Aroclor 1016/1242,,PCB Aroclors,UG/KG,UG/L,NA,PCB_AR
+Aroclor 1221,,PCB Aroclors,UG/KG,UG/L,11104-28-2,PCB_AR
+Aroclor 1232,,PCB Aroclors,UG/KG,UG/L,11141-16-5,PCB_AR
+Aroclor 1242,,PCB Aroclors,UG/KG,UG/L,53469-21-9,PCB_AR
+Aroclor 1248,,PCB Aroclors,UG/KG,UG/L,12672-29-6,PCB_AR
+Aroclor 1254,,PCB Aroclors,UG/KG,UG/L,11097-69-1,PCB_AR
+Aroclor 1260,,PCB Aroclors,UG/KG,UG/L,11096-82-5,PCB_AR
+Aroclor 1262,,PCB Aroclors,UG/KG,UG/L,37324-23-5,PCB_AR
+Aroclor 5432,,PCT,UG/KG,UG/L,NA,
+Aroclor 5442,,PCT,UG/KG,UG/L,NA,
+Aroclor 5460,,PCT,UG/KG,UG/L,NA,
+Arsenic,,Metal,MG/KG,UG/L,7440-38-2,
+Arsenic SEM,Simultaneously extracted Se,AVS/SEM,µmoles/g,NA,NA,
+AVS,Acid volatile sulfides,AVS/SEM,µmoles/g,NA,NA,
+Azobenzene,,Semivol,UG/KG,UG/L,103-33-3,
+Barium,,Metal,MG/KG,UG/L,7440-39-3,
+Barium SEM,Simultaneously extracted Ba,AVS/SEM,µmoles/g,NA,NA,
+Benz(a)anthracene,,PAH,UG/KG,UG/L,56-55-3,HPAH
+Benzene,,Volatile,UG/KG,UG/L,71-43-2,
+Benzidine,,Semivol,UG/KG,UG/L,92-87-5,
+Benzo(a)pyrene,,PAH,UG/KG,UG/L,50-32-8,HPAH
+Benzo(a)pyrene FAC,Fluorescent aromatic compound-Benzo(a)pyrene,Metabolite,ng/ml,NA,NA,
+Benzo(a)pyrene metabolites,,Metabolite,ng/mg,NA,NA,
+Benzo(b)fluoranthene,,PAH,UG/KG,UG/L,205-99-2,
+Benzo(bk)fluoranthenes,,PAH,UG/KG,UG/L,NA,
+Benzo(c)cinnoline,,Semivol,UG/KG,UG/L,230-17-1,
+Benzo(e)pyrene,,PAH,UG/KG,UG/L,192-97-2,HPAH
+"Benzo(g,h,i)perylene",,PAH,UG/KG,UG/L,191-24-2,
+Benzo(k)fluoranthene,,PAH,UG/KG,UG/L,207-08-9,
+Benzoic Acid,,Semivol,UG/KG,UG/L,65-85-0,
+Benzyl Alcohol,,Semivol,UG/KG,UG/L,100-51-6,
+Beryllium,,Metal,MG/KG,UG/L,7440-41-7,
+Beryllium SEM,Simultaneously extracted Be,AVS/SEM,µmoles/g,NA,NA,
+beta-BHC,,Pesticide,UG/KG,UG/L,319-85-7,
+"BHCs, total",TOTAL_BHC,Pesticide,UG/KG,UG/L,NA,
+Biphenyl,,PAH,UG/KG,UG/L,92-52-4,LPAH
+Bis(2-chloroethoxy)methane,,Semivol,UG/KG,UG/L,111-91-1,
+Bis(2-chloroethyl)ether,,Semivol,UG/KG,UG/L,111-44-4,
+Bis(2-chloroisopropyl)ether,,Semivol,UG/KG,UG/L,39638-32-9,
+Bis(2-ethylhexyl) Phthalate,,Phthalate,UG/KG,UG/L,117-81-7,
+Bolstar,Sulprofos,Pesticide,UG/KG,UG/L,35400-43-2,
+Boron,,Metal,MG/KG,UG/L,7440-42-8,
+Bromodichloromethane,,Volatile,UG/KG,UG/L,75-27-4,
+Bromoform,,Volatile,UG/KG,UG/L,75-25-2,
+Bromomethane,,Volatile,UG/KG,UG/L,74-83-9,
+Butylbenzyl Phthalate,,Phthalate,UG/KG,UG/L,85-68-7,
+Butyltin,Total butyltins,Organotin,UG/KG,UG/L,NA,
+C1 Benzo(a)pyrene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1 Chrysene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1 Fluoranthene/pyrene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1 Fluorene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1 Naphthalene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1 Phenanthrene/anthracene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C10LAB-2,(1-methylnonyl)-benzene,LAB,UG/KG,UG/L,4537-13-7,
+C10LAB-3,(1-ethyloctyl)-benzene,LAB,UG/KG,UG/L,4621-36-7,
+C10LAB-4,(1-propylheptyl)-benzene,LAB,UG/KG,UG/L,4537-12-6,
+C10LAB-5,(1-butylhexyl)-benzene,LAB,UG/KG,UG/L,4537-11-5,
+C11LAB-2,(1-methyldecyl)-benzene,LAB,UG/KG,UG/L,4536-88-3,
+C11LAB-3,(1-ethylnonyl)-benzene,LAB,UG/KG,UG/L,4536-87-2,
+C11LAB-4,(1-propyloctyl)-benzene,LAB,UG/KG,UG/L,4536-86-1,
+C11LAB-5,(1-butylheptyl)-benzene,LAB,UG/KG,UG/L,4537-15-9,
+C11LAB-6,(1-pentylhexyl)-benzene,LAB,UG/KG,UG/L,4537-14-8,
+C12LAB-2,(1-methylundecyl)-benzene,LAB,UG/KG,UG/L,2719-61-1,
+C12LAB-3,(1-ethyldecyl)-benzene,LAB,UG/KG,UG/L,2400-00-2,
+C12LAB-4,(1-propylnonyl)-benzene,LAB,UG/KG,UG/L,2719-64-4,
+C12LAB-5,(1-butyloctyl)-benzene,LAB,UG/KG,UG/L,2719-63-3,
+C12LAB-6,(1-pentylheptyl)-benzene,LAB,UG/KG,UG/L,2719-62-2,
+C13LAB-2,Linear alkyl benzene,LAB,UG/KG,UG/L,NF,
+C13LAB-3,(1-ethylundecyl)-benzene,LAB,UG/KG,UG/L,4534-52-5,
+C13LAB-4,(1-propyldecyl)-benzene,LAB,UG/KG,UG/L,4534-51-4,
+C13LAB-5,(1-butylnonyl)-benzene,LAB,UG/KG,UG/L,4534-50-3,
+C13LAB-7/6,Linear alkyl benzene,LAB,UG/KG,UG/L,NA,
+C14LAB-2,(1-methyltridecyl)-benzene,LAB,UG/KG,UG/L,4534-59-2,
+C14LAB-3,(1-ethyldodecyl)-benzene,LAB,UG/KG,UG/L,4534-58-1,
+C14LAB-4,(1-propylundecyl)-benzene,LAB,UG/KG,UG/L,4534-57-0,
+C14LAB-5,(1-butyldecyl)-benzene,LAB,UG/KG,UG/L,4534-56-9,
+C14LAB-6,(1-pentylnonyl)-benzene,LAB,UG/KG,UG/L,4534-55-8,
+C14LAB-7,Linear alkyl benzene,LAB,UG/KG,UG/L,4534-54-7,
+C1-Benz(a)anthracenes/Chrysenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C1-Dibenzothiophenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2 Chrysene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2 Dibenzothiophene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2 Fluorene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2 Naphthalene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2 Phenanthrene/anthracene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2-Benz(a)anthracenes/Chrysenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C2-Fluoranthenes/pyrenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3 Chrysene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3 Dibenzothiophene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3 Fluorene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3 Naphthalene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3 Phenanthrene/anthracene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3-Benz(a)anthracenes/Chrysenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C3-Fluoranthenes/pyrenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C4 Chrysene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C4 Naphthalene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C4 Phenanthrene/anthracene,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+C4-Benz(a)anthracenes/Chrysenes,Alkyl PAH,PAH,UG/KG,UG/L,NA,
+Cadmium,,Metal,MG/KG,UG/L,7440-43-9,
+Cadmium SEM,Simultaneously extracted Cd,AVS/SEM,µmoles/g,NA,NA,
+Carbazole,,Semivol,UG/KG,UG/L,86-74-8,
+Carbofuran,,Pesticide,UG/KG,UG/L,1563-66-2,
+Carbon disulfide,,Volatile,UG/KG,UG/L,75-15-0,
+Chlordane,"Total chlordane, calculated",Pesticide,UG/KG,UG/L,57-74-9,
+Chlordane_R,Reported total chlordane,Pesticide,UG/KG,UG/L,57-74-9,
+Chlorinated pesticides,Total chlorinated pesticides,Pesticide,UG/KG,UG/L,NA,
+Chlorinated phenols,Total Clorinated phenols,Phenol,UG/KG,UG/L,1336-35-2,
+Chlorobenzene,,Volatile,UG/KG,UG/L,108-90-7,
+Chloroethane,,Volatile,UG/KG,UG/L,75-00-3,
+Chloroform,,Volatile,UG/KG,UG/L,67-66-3,
+Chloromethane,,Volatile,UG/KG,UG/L,74-87-3,
+Chloroneb,,Pesticide,UG/KG,UG/L,2675-77-6,
+Chlorpyrifos,Dursban is a synonym,Pesticide,UG/KG,UG/L,2921-88-2,
+Chromium,,Metal,MG/KG,UG/L,7440-47-3,
+Chromium hexavalent,,Metal,MG/KG,UG/L,18540-29-9,
+Chromium SEM,Simultaneously extracted Cr,AVS/SEM,µmoles/g,NA,NA,
+Chrysene,,PAH,UG/KG,UG/L,218-01-9,HPAH
+"cis-1,3-Dichloropropene",,Volatile,UG/KG,UG/L,10061-01-5,
+cis-Nonachlor,,Pesticide,UG/KG,UG/L,5103-73-1,CHLORDANE
+Clay,Percent clay,Grain Size,PCT,NA,NA,
+Clay C,Percent coarse clay,Grain Size,PCT,NA,NA,
+Clay F,Percent fine clay,Grain Size,PCT,NA,NA,
+Clay M,Percent medium clay,Grain Size,PCT,NA,NA,
+Cobalt,,Metal,MG/KG,UG/L,7440-48-4,
+Cobalt SEM,Simultaneously extracted Co,AVS/SEM,µmoles/g,NA,NA,
+COD,Chemical oxygen demand,Conventional,MG/KG,NA,NA,
+Copper,,Metal,MG/KG,UG/L,7440-50-8,
+Copper SEM,Simultaneously extracted Cu,AVS/SEM,µmoles/g,NA,NA,
+Coprostanol,,Sterol,CPG,NA,NF,
+Coronene,Hexabenzobenzene,PAH,UG/KG,NA,191-07-1,
+Coumaphos,,Pesticide,UG/KG,UG/L,56-72-4,
+Cyanide,,Conventional,UG/KG,UG/L,57-12-5,
+Dacthal,,Pesticide,UG/KG,UG/L,1861-32-1,
+Dalapon,"2,2-Dichloropropanoic acid",Pesticide,UG/KG,UG/L,75-99-0,
+DDTs,"Total DDTs, calculated",Pesticide,UG/KG,UG/L,NA,
+DDTs_R,"Total DDTs, reported",Pesticide,UG/KG,UG/L,NA,
+Decachloro biphenyls,Equivalent to PCB209,PCB Homologs,UG/KG,UG/L,NA,
+delta-BHC,delta-Hexachlorocyclohexane,Pesticide,UG/KG,UG/L,319-86-8,
+Demeton,Systox is a synonym,Pesticide,UG/KG,UG/L,8065-48-3,
+Diazinon,,Pesticide,UG/KG,UG/L,333-41-5,
+"Dibenz(a,h)anthracene",,PAH,UG/KG,UG/L,53-70-3,HPAH
+"Dibenz(a,j)acridine",,Semivol,UG/KG,UG/L,224-42-0,
+Dibenzofuran,,Dioxin/Furan,UG/KG,UG/L,132-64-9,
+Dibenzopyrene,,PAH,UG/KG,UG/L,NF,
+Dibenzothiophene,,Sulfur-PAH,UG/KG,UG/L,132-65-0,
+Dibromochloromethane,,Volatile,UG/KG,UG/L,124-48-1,
+Dibutyl phthalate,,Phthalate,UG/KG,UG/L,84-74-2,
+Dibutyltin,,Organotin,UG/KG,UG/L,1002-53-5,
+Dibutyltin chloride,Di-n-butyl Tin(IV) Dichloride,Organotin,UG/KG,UG/L,683-18-1,
+Dicamba,"3,6-dichloro-o-anisic acid",Pesticide,UG/KG,UG/L,1918-00-9,
+Dichloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Dichlorvos,,Pesticide,UG/KG,UG/L,62-73-7,
+Dieldrin,,Pesticide,UG/KG,UG/L,60-57-1,
+Diesel Range Organics,,Conventional,MG/KG,MG/L,NA,
+Diethyl phthalate,,Phthalate,UG/KG,UG/L,84-66-2,
+Diethylhexyl phthalate,di-sec-octyl phthalate; Di(2-ethylhexyl) phthalate ,Phthalate,UG/KG,UG/L,117-81-7,
+Dimethoate,,Pesticide,UG/KG,UG/L,60-51-5,
+Dimethyl phthalate,,Phthalate,UG/KG,UG/L,131-11-3,
+Dimethylaminoazobenzene,p-Dimethylaminoazobenzene is a synonym,Semivol,UG/KG,UG/L,60-11-7,
+Dinoseb,"4,6-Dinitro-2-sec-butylphenol",Pesticide,UG/KG,UG/L,88-85-7,
+Dioctyl phthalate,,Phthalate,UG/KG,UG/L,117-84-0,
+Diphenylamine,,Semivol,UG/KG,UG/L,122-39-4,
+Disulfoton,,Pesticide,UG/KG,UG/L,298-04-4,
+Dry weight,Sample dry weight,Conventional,g,NA,NA,
+Dursban,Clorpyrifos is a synonym,Pesticide,UG/KG,UG/L,2921-88-2,
+Endosulfan I,,Pesticide,UG/KG,UG/L,959-98-8,
+Endosulfan II,,Pesticide,UG/KG,UG/L,33213-65-9,
+Endosulfan sulfate,,Pesticide,UG/KG,UG/L,1031-07-8,
+Endrin,,Pesticide,UG/KG,UG/L,72-20-8,
+Endrin aldehyde,,Pesticide,UG/KG,UG/L,7421-93-4,
+Endrin ketone,,Pesticide,UG/KG,UG/L,53494-70-5,
+EPN,Ethyl O-(p-nitrophenyl) phenylphosphonothionate,Pesticide,UG/KG,UG/L,2104-64-5,
+Ethion,,Pesticide,UG/KG,UG/L,563-12-2,
+Ethoprop,Mocap,Pesticide,UG/KG,UG/L,13194-48-4,
+Ethyl methanesulfonate,,Semivol,UG/KG,UG/L,62-50-0,
+Ethyl Parathion,Parathion is a synonym,Pesticide,UG/KG,UG/L,56-38-2,
+Ethylbenzene,,Volatile,UG/KG,UG/L,100-41-4,
+Fensulfothion,,Pesticide,UG/KG,UG/L,115-90-2,
+Fenthion,,Pesticide,UG/KG,UG/L,55-38-9,
+Fines,Percent fines,Grain Size,PCT,NA,NA,
+Fluoranthene,,PAH,UG/KG,UG/L,206-44-0,HPAH
+Fluorene,,PAH,UG/KG,UG/L,86-73-7,LPAH
+gamma-BHC,Lindane,Pesticide,UG/KG,UG/L,58-89-9,
+gamma-Chlordane,,Pesticide,UG/KG,UG/L,5566-34-7,CHLORDANE
+gamma-Chlordene,Of tech. Chlordane,Pesticide,UG/KG,UG/L,56641-38-4,
+Gasoline Range Organics,,Conventional,MG/KG,MG/L,NA,
+Granule,Percent granule,Grain Size,PCT,NA,NA,
+Gravel,Percent gravel,Grain Size,PCT,NA,NA,
+Guthion,,Pesticide,UG/KG,UG/L,86-50-0,
+Heptachlor,,Pesticide,UG/KG,UG/L,76-44-8,
+Heptachlor epoxide,,Pesticide,UG/KG,UG/L,1024-57-3,
+Heptachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Hexachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Hexachlorobenzene,,Pesticide,UG/KG,UG/L,118-74-1,
+Hexachlorobutadiene,,Semivol,UG/KG,UG/L,87-68-3,
+Hexachlorocyclopentadiene,,Semivol,UG/KG,UG/L,77-47-4,
+Hexachloroethane,,Semivol,UG/KG,UG/L,67-72-1,
+Hexachlorophene,,Semivol,UG/KG,UG/L,70-30-4,
+Hexachloropropene,,Semivol,UG/KG,UG/L,1888-71-7,
+HPAH,"Total high molecular weight PAHs, calculated using SQObase methods",PAH,UG/KG,UG/L,NA,
+HPAH_R,Total HPAHs as reported in source data,PAH,UG/KG,UG/L,NA,
+Hydroquinone,,Semivol,UG/KG,UG/L,123-31-9,
+"Indeno(1,2,3-c,d)pyrene",,PAH,UG/KG,UG/L,193-39-5,
+IOD,Immediate oxygen demand,Conventional,MG/KG,NA,NA,
+Iron,,Metal,MG/KG,UG/L,7439-89-6,
+Iron SEM,Simultaneously extracted Fe,AVS/SEM,µmoles/g,NA,NA,
+Isodrin,,Pesticide,UG/KG,UG/L,465-73-6,
+Isophorone,,Semivol,UG/KG,UG/L,78-59-1,
+Isoquinoline,,Semivol,UG/KG,UG/L,119-65-3,
+Isosafrole,,Semivol,UG/KG,UG/L,120-58-1,
+Lead,,Metal,MG/KG,UG/L,7439-92-1,
+Lead SEM,Simultaneously extracted Pb,AVS/SEM,µmoles/g,NA,NA,
+Lipid,Percent lipid,Conventional,PCT,NA,NA,
+Liquid limit,,Conventional,PCT,NA,NA,
+LPAH,"Total low molecular weight PAHs, calculated using SQObase methods",PAH,UG/KG,UG/L,NA,
+LPAH_R,Total LPAHs as reported in source data,PAH,UG/KG,UG/L,NA,
+Magnesium,,Metal,MG/KG,MG/L,7439-95-4,
+Malathion,,Pesticide,UG/KG,UG/L,121-75-5,
+Maleic anhydride,,Semivol,UG/KG,UG/L,108-31-6,
+Manganese,,Metal,MG/KG,UG/L,7439-96-5,
+Manganese SEM,Simultaneously extracted Mn,AVS/SEM,µmoles/g,NA,NA,
+MCPA,2-Methyl-4-chlorophenoxyacetic acid,Pesticide,UG/KG,UG/L,94-74-6,
+MCPP,2-(2-Methyl-4-chlorophenoxy) propionic acid,Pesticide,UG/KG,UG/L,93-65-2,
+Mercury,,Metal,MG/KG,UG/L,7439-97-6,
+Mercury SEM,Simultaneously extracted Hg,AVS/SEM,µmoles/g,NA,NA,
+Merphos,,Pesticide,UG/KG,UG/L,150-50-5,
+Methoxychlor,,Pesticide,UG/KG,UG/L,72-43-5,
+Methyl ethyl ketone,,Volatile,UG/KG,UG/L,78-93-3,
+Methyl isobutyl ketone,,Volatile,UG/KG,UG/L,108-10-1,
+Methyl mercury,"Methylmercury(+1), ion",Metal,UG/KG,UG/L,22967-92-6,
+Methyl methanesulfonate,,Semivol,UG/KG,UG/L,66-27-3,
+Methyl Parathion,,Pesticide,UG/KG,UG/L,298-00-0,
+Methylene chloride,,Volatile,UG/KG,UG/L,75-09-2,
+Mirex,,Pesticide,UG/KG,UG/L,2385-85-5,
+Moisture,Percent moisture,Conventional,PCT,PCT,NA,
+Molybdenum,,Metal,MG/KG,UG/L,7439-98-7,
+Molybdenum SEM,Simultaneously extracted Mo,AVS/SEM,µmoles/g,NA,NA,
+Monobutyltin,,Organotin,UG/KG,UG/L,78763-54-9,
+Monochloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+m-Xylene,,Semivol,UG/KG,UG/L,108-38-3,
+Naled,,Pesticide,UG/KG,UG/L,300-76-5,
+Naphthalene,,PAH,UG/KG,UG/L,91-20-3,LPAH
+Naphthalene FAC,Fluorescent aromatic compounds-Naphthalene,Metabolite,ng/ml,NA,NA,
+Naphthalene metabolites,,Metabolite,ng/mg,NA,NA,
+Nickel,,Metal,MG/KG,UG/L,7440-02-0,
+Nickel SEM,Simultaneously extracted Ni,AVS/SEM,µmoles/g,NA,NA,
+Nicotine,,Semivol,UG/KG,UG/L,54-11-5,
+Nitrate,,Nutrient,MG/KG,MG/L,NF,
+Nitrobenzene,,Semivol,UG/KG,UG/L,98-95-3,
+N-Nitrosodiethylamine,,Semivol,UG/KG,UG/L,55-18-5,
+N-Nitrosodimethylamine,,Semivol,UG/KG,UG/L,62-75-9,
+N-Nitroso-di-n-butylamine,,Semivol,UG/KG,UG/L,924-16-3,
+N-Nitrosodi-n-propylamine,,Semivol,UG/KG,UG/L,621-64-7,
+N-Nitrosodiphenylamine,,Semivol,UG/KG,UG/L,86-30-6,
+N-Nitrosopiperidine,,Semivol,UG/KG,UG/L,100-75-4,
+N-Nitrosopyrrolidine,,Semivol,UG/KG,UG/L,930-55-2,
+Nonachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+OCDD,"1,2,3,4,6,7,8,9-Octachlorodibenzodioxin ",Dioxin/Furan,NG/KG,NG/L,3268-87-9,
+OCDF,Octachlorodibenzofuran,Dioxin/Furan,NG/KG,NG/L,39001-02-0,
+o-Chlorophenol,2-Chlorophenol is a synonym,Phenol,UG/KG,UG/L,95-57-8,
+Octachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Octamethyl pyrophosphoramide,Schradan,Pesticide,UG/KG,UG/L,152-16-9,
+Oil and Grease,,Conventional,MG/KG,UG/L,NA,
+o-Toluidine,,Semivol,UG/KG,UG/L,95-53-4,
+Oxadiazon,,Pesticide,UG/KG,UG/L,19666-30-9,
+Oxidation Reduction Potential,Redox,Conventional,mV,NA,NA,
+Oxychlordane,,Pesticide,UG/KG,UG/L,27304-13-8,CHLORDANE
+"p,p'-DDMS","1,1'-(2-chloroethylidene)bis(4-chlorobenzene)",Pesticide,UG/KG,UG/L,2642-80-0,
+"p,p'-DDMU","1,1'-(chloroethenylidene)bis(4-chlorobenzene)",Pesticide,UG/KG,UG/L,1022-22-6,
+"p,p'-Dichlorobenzophenone",Derivative of DDT,Semivol,UG/KG,UG/L,90-98-2,
+PAHs,"Total PAHs, calculated using SQObase methods",PAH,UG/KG,UG/L,NA,
+PAHs_R,Total PAHs as reported in source data,PAH,UG/KG,UG/L,NA,
+Parathion,Ethyl Parathion is a synonym,Pesticide,UG/KG,UG/L,56-38-2,
+PCB Homologs,"Total PCB Homologs, reported",PCB Homologs,UG/KG,UG/L,NA,
+PCB001,2-Chlorobiphenyl,PCB Congeners,UG/KG,UG/L,2051-60-7,PCBs
+PCB003,4-Chlorobiphenyl,PCB Congeners,UG/KG,UG/L,2051-62-9,PCBs
+PCB004,"2,2'-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,13029-08-8,PCBs
+PCB005,"2,3-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,16605-91-7,PCBs
+PCB005/008,PCB#005 & PCB#008,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB006,"2,3'-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,25569-80-6,PCBs
+PCB007,"2,4-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,33284-50-3,PCBs
+PCB007/009,PCB#007 & PCB#009,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB008,"2,4'-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,34883-43-7,PCBs
+PCB015,"4,4'-Dichlorobiphenyl",PCB Congeners,UG/KG,UG/L,2050-68-2,PCBs
+PCB016/032,PCB#016 & PCB#032,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB018,"2,2',5-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,37680-65-2,PCBs
+PCB022,"2,3,4'-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-85-8,PCBs
+PCB022/051,PCB#022 & PCB#051,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB024,"2,3,6-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,55702-45-9,PCBs
+PCB024/027,PCB#024 & PCB#027,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB025,"2,3',4-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,55712-37-3,PCBs
+PCB026,"2,3',5-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-81-4,PCBs
+PCB027,"2,3',6-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-76-7,PCBs
+PCB028,"2,4,4'-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,7012-37-5,PCBs
+PCB029,"2,4,5-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,15862-07-4,PCBs
+PCB031,"2,4',5-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,16606-02-3,PCBs
+PCB033,"2,3',4'-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-86-9,PCBs
+PCB037,"3,4,4'-Trichlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-90-5,PCBs
+PCB037/042,PCB#037 & PCB#042,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB037/042/059,PCB#037 & PCB#042 & PCB#059,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB040,"2,2',3,3'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38444-93-8,PCBs
+PCB041/064,PCB#041 & PCB#064,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB044,"2,2',3,5'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-39-5,PCBs
+PCB045,"2,2',3,6-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,70362-45-7,PCBs
+PCB046,"2,2',3,6'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-47-5,PCBs
+PCB047/048,PCB#047 & PCB#048,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB047/048/075,PCB#047 & PCB#048 & PCB#075,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB049,"2,2',4,5'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-40-8,PCBs
+PCB050,"2,2',4,6-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,62796-65-0,PCBs
+PCB052,"2,2',5,5'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35693-99-3,PCBs
+PCB056,"2,3,3',4'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-43-1,PCBs
+PCB056/060,PCB#056 & PCB#060,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB060,"2,3,4,4'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,33025-41-1,PCBs
+PCB066,"2,3',4,4'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32598-10-0,PCBs
+PCB066/095,PCB#066 & PCB#095,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB070,"2,3',4',5-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32598-11-1,PCBs
+PCB071,"2,3',4',6-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-46-4,PCBs
+PCB074,"2,4,4',5-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32690-93-0,PCBs
+PCB077,"3,3',4,4'-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32598-13-3,PCBs
+PCB077/110,PCB#077 & #110,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB081,"3,4,4',5-Tetrachlorobiphenyl",PCB Congeners,UG/KG,UG/L,70362-50-4,PCBs
+PCB082,"2,2',3,3',4-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-62-4,PCBs
+PCB083,"2,2',3,3',5-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,60145-20-2,PCBs
+PCB084,"2,2',3,3',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-60-2,PCBs
+PCB085,"2,2',3,4,4'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,65510-45-4,PCBs
+PCB087,"2,2',3,4,5'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-02-8,PCBs
+PCB088,"2,2',3,4,6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,55215-17-3,PCBs
+PCB090/101,PCB#090 & PCB#101,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB092,"2,2',3,5,5'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-61-3,PCBs
+PCB095,"2,2',3,5',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38379-99-6,PCBs
+PCB097,"2,2',3,4',5'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,41464-51-1,PCBs
+PCB099,"2,2',4,4',5-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-01-7,PCBs
+PCB100,"2,2',4,4',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,39485-83-1,PCBs
+PCB101,"2,2',4,5,5'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,37680-73-2,PCBs
+PCB105,"2,3,3',4,4'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32598-14-4,PCBs
+PCB105/132,PCB#105 & PCB#132,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB107/108/144,PCB#107 & PCB#108 & PCB#144,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB108/118/149,PCB#108 & #118 & #149,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB110,"2,3,3',4',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-03-9,PCBs
+PCB114,"2,3,4,4',5-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-37-0,PCBs
+PCB115,"2,3,4,4',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-38-1,PCBs
+PCB118,"2,3',4,4',5-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,31508-00-6,PCBs
+PCB119,"2,3',4,4',6-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,56558-17-9,PCBs
+PCB123,"2,3',4,4',5'-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,65510-44-3,PCBs
+PCB126,"3,3',4,4',5-Pentachlorobiphenyl",PCB Congeners,UG/KG,UG/L,57465-28-8,PCBs
+PCB128,"2,2',3,3',4,4'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-07-3,PCBs
+PCB128/167,PCB#128 & #167,PCB Congeners,UG/KG,UG/L,NF,PCBs
+PCB129,"2,2',3,3',4,5-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,55215-18-4,PCBs
+PCB132,"2,2',3,3',4,6'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-05-1,PCBs
+PCB132/153,PCB#132 & PCB#153,PCB Congeners,UG/KG,UG/L,NF,PCBs
+PCB135,"2,2',3,3',5,6'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52744-13-5,PCBs
+PCB136,"2,2',3,3',6,6'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38411-22-2,PCBs
+PCB137,"2,2',3,4,4',5-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35694-06-5,PCBs
+PCB137/176,PCB#137 & PCB#176,PCB Congeners,UG/KG,UG/L,NF,PCBs
+PCB138,"2,2',3,4,4',5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35065-28-2,PCBs
+PCB141,"2,2',3,4,5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52712-04-6,PCBs
+PCB146,"2,2',3,4',5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,51908-16-8,PCBs
+PCB148,"2,2',3,4',5,6'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-41-6,PCBs
+PCB149,"2,2',3,4',5',6-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-04-0,PCBs
+PCB151,"2,2',3,5,5',6-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-63-5,PCBs
+PCB153,"2,2',4,4',5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35065-27-1,PCBs
+PCB153/132/168,PCB#153 & PCB#132 & PCB#168,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB153/168,PCB#153 & PCB#168,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB156,"2,3,3',4,4',5-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38380-08-4,PCBs
+PCB157,"2,3,3',4,4',5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,69782-90-7,PCBs
+PCB158,"2,3,3',4,4',6-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-42-7,PCBs
+PCB159,"2,3,3',4,5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,39635-35-3,PCBs
+PCB159/182/187,PCB159 & 182 & 187,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB167,"2,3',4,4',5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-72-6,PCBs
+PCB168,"2,3',4,4',5',6-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,59291-65-5,PCBs
+PCB168/132,PCB#168 & PCB#132,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB169,"3,3',4,4',5,5'-Hexachlorobiphenyl",PCB Congeners,UG/KG,UG/L,32774-16-6,PCBs
+PCB170,"2,2',3,3',4,4',5-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35065-30-6,PCBs
+PCB170/190,PCB#170 & PCB#190,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB172,"2,2',3,3',4,5,5'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-74-8,PCBs
+PCB174,"2,2',3,3',4,5,6'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,38411-25-5,PCBs
+PCB176,"2,2',3,3',4,6,6'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-65-7,PCBs
+PCB177,"2,2',3,3',4,5',6'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-70-4,PCBs
+PCB178,"2,2',3,3',5,5',6-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-67-9,PCBs
+PCB179,"2,2',3,3',5,6,6'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-64-6,PCBs
+PCB180,"2,2',3,4,4',5,5'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35065-29-3,PCBs
+PCB183,"2,2',3,4,4',5',6-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-69-1,PCBs
+PCB185,"2,2',3,4,5,5',6-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52712-05-7,PCBs
+PCB187,"2,2',3,4',5,5',6-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-68-0,PCBs
+PCB188,"2,2',3,4',5,6,6'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74487-85-7,PCBs
+PCB189,"2,3,3',4,4',5,5'-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,39635-31-9,PCBs
+PCB191,"2,3,3',4,4',5',6-Heptachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-50-7,PCBs
+PCB194,"2,2',3,3',4,4',5,5'-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,35694-08-7,PCBs
+PCB195,"2,2',3,3',4,4',5,6-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-78-2,PCBs
+PCB195/208,PCB#195 & PCB#208,PCB Congeners,UG/KG,UG/L,NA,PCBs
+PCB196,"2,2',3,3',4,4',5,6'-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,42740-50-1,PCBs
+PCB200,"2,2',3,3',4,5,6,6'-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-73-7,PCBs
+PCB201,"2,2',3,3',4,5',6,6'-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,40186-71-8,PCBs
+PCB203,"2,2',3,4,4',5,5',6-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-76-0,PCBs
+PCB205,"2,3,3',4,4',5,5',6-Octachlorobiphenyl",PCB Congeners,UG/KG,UG/L,74472-53-0,PCBs
+PCB206,"2,2',3,3',4,4',5,5',6-Nonachlorobiphenyl",PCB Congeners,UG/KG,UG/L,40186-72-9,PCBs
+PCB207,"2,2',3,3',4,4',5,6,6'-Nonachlorobiphenyl",PCB Congeners,UG/KG,UG/L,52663-79-3,PCBs
+PCB209,Decachlorobiphenyl,PCB Congeners,UG/KG,UG/L,2051-24-3,PCBs
+PCBs,Total PCBs,PCB,UG/KG,UG/L,NA,
+PCBs_R,Reported total PCBs,PCB,UG/KG,UG/L,NA,
+PCMC,4-Chloro-3-methylphenol is a synonym,Phenol,UG/KG,UG/L,59-50-7,
+PCNs,Polychlorinated Naphthalenes,Volatile,UG/KG,UG/L,NA,
+p-Cresidine,5-Methyl-o-Anisidine and 2-Methoxy-5-Methylaniline are synonyms ,Monocyclic Arom,UG/KG,UG/L,120-71-8,
+PCTs,Total polychlorinated terphenyls,PCT,UG/KG,UG/L,61788-33-8,
+p-Dimethylaminoazobenzene,Dimethylaminoazobenzene is a synonym,Semivol,UG/KG,UG/L,60-11-7,
+Pebble,Percent pebble,Grain Size,PCT,NA,NA,
+Pentachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Pentachloroanisole,,Semivol,UG/KG,UG/L,1825-21-4,
+Pentachlorobenzene,,Semivol,UG/KG,UG/L,608-93-5,
+Pentachloronitrobenzene,,Semivol,UG/KG,UG/L,82-68-8,
+Pentachlorophenol,,Phenol,UG/KG,UG/L,87-86-5,
+Perthane,,Pesticide,UG/KG,UG/L,72-56-0,
+Perylene,,PAH,UG/KG,UG/L,198-55-0,HPAH
+pH,PH,Conventional,pH units,NA,NA,
+Phenacetin,,Semivol,UG/KG,UG/L,62-44-2,
+Phenanthrene,,PAH,UG/KG,UG/L,85-01-8,LPAH
+Phenanthrene FAC,Fluorescent aromatic compounds-Phenanthrene,Metabolite,ng/ml,NA,NA,
+Phenanthrene metabolites,,Metabolite,ng/mg,NA,NA,
+Phenanthridine,,Semivol,UG/KG,UG/L,229-87-8,
+Phenobarbital,"5-ethyl-5-phenyl-2,4,6-(1H,3H,5H)pyrimidinetrione",Barbiturate,UG/KG,UG/L,50-06-6,
+Phenols,Total Phenols,PAH,UG/KG,UG/L,NA,
+Phorate,,Pesticide,UG/KG,UG/L,298-02-2,
+Phosdrin,Mevinphos,Pesticide,UG/KG,UG/L,7786-34-7,
+Phosphate,,Nutrient,MG/KG,MG/L,NA,
+Phthalates,Total Phthalate esters,Phthalate,UG/KG,UG/L,NA,
+Phthalic Anhydride,,Phthalate,UG/KG,UG/L,85-44-9,
+Plastic limit,,Conventional,PCT,NA,NA,
+Plasticity index,,Conventional,NA,NA,NA,
+Pronamide,,Semivol,UG/KG,UG/L,23950-58-5,
+Pyrene,,PAH,UG/KG,UG/L,129-00-0,HPAH
+Quinoline,,Semivol,UG/KG,UG/L,91-22-5,
+Residual Range Organics (RRO),,Conventional,MG/KG,MG/L,NA,
+Ronnel,,Pesticide,UG/KG,UG/L,299-84-3,
+Sand,Percent sand,Grain Size,PCT,NA,NA,
+Sand C,Percent coarse sand,Grain Size,PCT,NA,NA,
+Sand F,Percent fine sand,Grain Size,PCT,NA,NA,
+Sand M,Pecent medium sand,Grain Size,PCT,NA,NA,
+Sand VC,Percent very coarse sand,Grain Size,PCT,NA,NA,
+Sand VF,Percent very fine sand,Grain Size,PCT,NA,NA,
+Selenium,,Metal,MG/KG,UG/L,7782-49-2,
+Selenium SEM,Simultaneously extracted Se,AVS/SEM,µmoles/g,NA,NA,
+SEM,Sum of simultaneously extracted metals,AVS/SEM,µmoles/g,NA,NA,
+SEM:AVS,SEM:AVS ratio,AVS/SEM,NA,NA,NA,
+SEM_AVS,SEM minus AVS,AVS/SEM,µmoles/g,NA,NA,
+Silicon,,Metal,MG/KG,UG/L,7440-21-3,
+Silt,Percent silt,Grain Size,PCT,NA,NA,
+Silt C,Percent coarse silt,Grain Size,PCT,NA,NA,
+Silt F,Percent fine silt,Grain Size,PCT,NA,NA,
+Silt M,Percent medium silt,Grain Size,PCT,NA,NA,
+Silt VF,Percent very fine silt,Grain Size,PCT,NA,NA,
+Silver,,Metal,MG/KG,UG/L,7440-22-4,
+Silver SEM,Simultaneously extracted Ag,AVS/SEM,µmoles/g,NA,NA,
+Silvex,,Pesticide,UG/KG,UG/L,93-72-1,
+Simazine,,Pesticide,UG/KG,UG/L,122-34-9,
+Solids,Total Solids,Conventional,PCT,PCT,NA,
+Specific gravity,,Conventional,SI Units,NA,NA,
+Stirofos,"Rabon or 2,4,5-trichloro-alpha-(chloromethylene)benzyl alcohol dimethyl phosphat",Pesticide,UG/KG,UG/L,961-11-5,
+Strontium,,Metal,MG/KG,UG/L,7440-24-6,
+Strontium SEM,Simultaneously extracted Sr,AVS/SEM,µmoles/g,NA,NA,
+Strychnine,Strychnidin-10-one,Semivol,UG/KG,UG/L,57-24-9,
+Styrene,,Volatile,UG/KG,UG/L,100-42-5,
+Sulfides,Total Sulfides,Conventional,MG/L,MG/L,NA,
+Sulfides dissolved,Total dissolved sulfides,Conventional,MG/L,MG/L,NA,
+Sulfotepp,TEDP,Pesticide,UG/KG,UG/L,3689-24-5,
+Systox,Demeton is a synonym,Pesticide,UG/KG,UG/L,8065-48-3,
+TCDD,Total TCDD,Dioxin/Furan,NG/KG,NA,1746-01-6,
+TCDF,Total TCDF,Dioxin/Furan,NG/KG,NA,1746-01-6,
+TDS,Total dissolved solids,Conventional,PCT,PCT,NA,
+TEQ,Dioxin toxic equivalent,Dioxin/Furan,NG/KG,NG/L,NA,
+Tetrabutyltin,,Organotin,UG/KG,UG/L,1461-25-2,
+Tetrachloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Tetrachloroethylene,,Volatile,UG/KG,UG/L,127-18-4,
+Tetrachloromethane,,Volatile,UG/KG,UG/L,56-23-5,
+Tetradifon,,Pesticide,UG/KG,NA,116-29-0,
+Thallium,,Metal,MG/KG,UG/L,7440-28-0,
+Thallium SEM,Simultaneously extracted Th,AVS/SEM,µmoles/g,NA,NA,
+Thionazin,,Pesticide,UG/KG,UG/L,297-97-2,
+Tin,,Metal,MG/KG,UG/L,7440-31-5,
+Tin SEM,Simultaneously extracted Sn,AVS/SEM,µmoles/g,NA,NA,
+Titanium,,Metal,MG/KG,UG/L,7440-32-6,
+Titanium SEM,Simultaneously extracted Ti,AVS/SEM,µmoles/g,NA,NA,
+TN,Total nitrogen,Conventional,MG/KG,MG/L,NA,
+TOC,Total organic carbon,Conventional,PCT,NA,NA,
+Tokuthion,Prothiophos,Pesticide,UG/KG,UG/L,34643-46-4,
+Toluene,,Volatile,UG/KG,UG/L,108-88-3,
+"Toluene-2,4-diamine",,Volatile,UG/KG,UG/L,95-80-7,
+Total Hepta-Dioxins,"Dioxins, 7HpCDD, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Hepta-Furans,"Furans, 7HpCDF, total",Dioxin/Furan,NG/KG,NG/L,NA,
+Total Hexa-Dioxins,"Dioxins, 6HxCDD, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Hexa-Furans,"Furans, 6HxCDF, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Organotins,Organotin,Organotin,UG/KG,UG/L,NA,
+Total Penta-Dioxins,"Dioxins, 5PCDD, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Penta-Furans,"Furans, 5PCDF, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Protein,,Metabolite,mg/ml,NA,NA,
+Total Tetra-Dioxins,"Dioxins, 4TCDD, total",Dioxin/Furan,NG/KG,NA,NA,
+Total Tetra-Furans,"Furans, 4TCDF, total",Dioxin/Furan,NG/KG,NA,NA,
+Toxaphene,Chlorinated Camphene,Pesticide,UG/KG,UG/L,8001-35-2,
+"trans-1,2-Dichloroethene",,Volatile,UG/KG,UG/L,156-60-5,
+"trans-1,3-Dichloropropene",,Volatile,UG/KG,UG/L,10061-02-6,
+trans-Chlordane,,Pesticide,UG/KG,UG/L,5103-74-2,CHLORDANE
+trans-Nonachlor,,Pesticide,UG/KG,UG/L,39765-80-5,CHLORDANE
+Tributyltin,tributylstannane; tri-n-Butyltin (TBT),Organotin,UG/KG,UG/L,688-73-3,
+Tributyltin chloride,tributylchlorostannane; Tri-n-butyltin chloride,Organotin,UG/KG,UG/L,1461-22-9,
+Trichloro biphenyls,,PCB Homologs,UG/KG,UG/L,NA,
+Trichlorofluoromethane,,Volatile,UG/KG,UG/L,75-69-4,
+Trichloronate,,Pesticide,UG/KG,UG/L,327-98-0,
+Trimethyl phosphate,,Semivol,UG/KG,UG/L,512-56-1,
+Triphenylene,,PAH,UG/KG,UG/L,217-59-4,
+Tripropyltin,,Organotin,UG/KG,UG/L,NF,
+TRPH,Total recovable petroleum hydrocarbons,Conventional,MG/KG,UG/L,NA,
+TVS,Total Volatile Solids,Conventional,PCT,PCT,NA,
+Vanadium,,Metal,MG/KG,UG/L,7440-62-2,
+Vanadium SEM,Simultaneously extracted V,AVS/SEM,µmoles/g,NA,NA,
+Vinyl acetate,,Volatile,UG/KG,UG/L,108-05-4,
+Vinyl chloride,,Volatile,UG/KG,UG/L,75-01-4,
+Xylene,,Semivol,UG/KG,UG/L,1330-20-7,
+Zinc,,Metal,MG/KG,UG/L,7440-66-6,
+Zinc SEM,Simultaneously extracted Zn,AVS/SEM,µmoles/g,NA,NA,

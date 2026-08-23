@@ -1,0 +1,13 @@
+SigEffect,SigEffectName,Description
+NA,Not applicable.,"Significance not applicable to sample, or uncalcuable."
+NCT,Not significant (cont/thresh).,Not significant when compared to control nor threshold value.  See Comments or metadata for threshold information.
+NR,Not reported.,Not reported.
+NRT,Not significant (ref/thresh).,"Green Book or ITM methods for solid phase. Not significant when compared to reference, with a threshold applied, generally 10% except for amphipods (20%)."
+NSC,Not significant (control).,"Not significant when compared to negative control, see test and comments for additional information."
+NSR,Not significant (reference).,"Not significant when compared to reference, see test and comments for additional information."
+SC,Significant (control).,"Significant when compared to negative control, see test and comments for additional information."
+SCT,Significant (cont/thresh).,Significant when compared to control and threshold value.  See Comments or metadata for threshold information.
+SR,Significant (reference).,"Significant when compared to reference, see test and comments for additional information."
+SRM,Significant (many references),"Significance calculated for more than one reference, detail in tblToxRefSigEffect."
+SRT,Significant (ref/thresh).,"Green Book or ITM methods for solid phase. Significant when compared to reference, with a threshold applied, generall 10% except for amphipods (20%)."
+X,Control or reference.,Sample is control or reference and statistical significance is not applicable.
