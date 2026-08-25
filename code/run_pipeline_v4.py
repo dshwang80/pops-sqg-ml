@@ -79,6 +79,18 @@ EXCLUDE_PATTERNS = ["Human liver cell line", "species not known", "Photobacteriu
                     "Crassostrea", "Echinoderm"]
 RANDOM_SEED = 42
 
+# ---- 재현성 config 로딩 (pipeline_v4_config.json) ----
+CONFIG_PATH = REPO_ROOT / "code" / "pipeline_v4_config.json"
+
+
+def load_config():
+    """pipeline_v4_config.json을 읽어 재현성 파라미터를 반환한다."""
+    import json
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            return json.load(f)
+    return {}
+
 eqp_params = {
     'DDTs':     {'log_kow': 6.91, 'ccc_ugL': 0.001},
     'CHLs':     {'log_kow': 6.00, 'ccc_ugL': 0.004},
@@ -122,10 +134,13 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
     print(f"[1-3] 생물종 정제 후: {df_pre.shape[0]:,}행, 종 수: {df_pre['Latin_Name_Species'].nunique()}")
 
     # 중금속 mPELQ 계산
+    # ★ 미측정 금속을 0으로 위장하지 않는다: fillna(0) 제거.
+    #   데이터에는 불검출(0) 코딩이 없고, -9/NaN은 모두 "미측정"이다.
+    #   측정된 금속만으로 평균을 내어 mPELQ를 산출한다(mean의 skipna 기본 동작).
     for m in METAL_COLS:
         if m not in df_pre.columns:
             df_pre[m] = np.nan
-    metal_df = df_pre[METAL_COLS].copy().fillna(0)
+    metal_df = df_pre[METAL_COLS].copy()
     quotients = pd.DataFrame({m: metal_df[m] / PEL_METALS[m] for m in METAL_COLS})
     df_pre["mPELQ_Metals"] = quotients.mean(axis=1)
 
@@ -205,23 +220,7 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
         df_sub = df_sub[df_sub["mPELQ_Metals"] <= mpelq_thresh].copy()
         n_after_mpelq = len(df_sub)
         n_mpelq_removed = n_before_mpelq - n_after_mpelq
-
-        # EqP 필터: EqP 예측 농도보다 낮은 농도에서 독성 → 신뢰도 낮음 → 제거
-        if substance in eqp_params:
-            p = eqp_params[substance]
-            kow = 10 ** p['log_kow']
-            koc = 0.41 * kow
-            f_oc = 0.02
-            c_sed = 10 ** df_sub[target_col].values
-            c_pw = c_sed * 1000 / (f_oc * koc)
-            implausible = (c_pw < p['ccc_ugL']) & (df_sub["Mean_Survival"].values < 80)
-            n_before_eqp = len(df_sub)
-            df_sub = df_sub[~implausible].copy()
-            n_eqp_removed = n_before_eqp - len(df_sub)
-            print(f"  {substance}: mPELQ 제거 {n_mpelq_removed} → EqP 제거 {n_eqp_removed} "
-                  f"→ 최종 {len(df_sub):,}지점")
-        else:
-            print(f"  {substance}: mPELQ 제거 {n_mpelq_removed} → 최종 {len(df_sub):,}지점")
+        print(f"  {substance}: mPELQ 제거 {n_mpelq_removed} → 최종 {len(df_sub):,}지점")
 
         substance_dfs[substance] = df_sub
 
@@ -374,8 +373,7 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
 
     drc_results = []
     drc_ok_species = {}  # DRC OK 종만 저장
-    cleaned_dfs = {}     # 가짜 독성 DROP된 데이터
-    total_dropped = 0
+    cleaned_dfs = {}     # DRC OK 종 데이터 (가짜 독성 DROP 없음)
 
     for substance in TARGET_SUBSTANCES:
         if substance not in substance_dfs:
@@ -424,12 +422,9 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
 
             if drc["DRC_OK"]:
                 ok_species_for_substance.append(sp)
-                # DRC OK 종: 저농도 가짜 독성 DROP (생존 80% 상향이 아님)
-                if drc["N_Low_Tox_Drop"] > 0:
-                    q1 = drc["Q1_Threshold"]
-                    low_tox_mask = sp_mask & (df_pooled["Conc_log"] <= q1) & (df_pooled["Mean_Survival"] < 80)
-                    df_pooled = df_pooled[~low_tox_mask].copy()
-                    total_dropped += drc["N_Low_Tox_Drop"]
+                # ★ 가짜 독성 DROP 중단: Primary에서는 survival 기준 EDS를 모두 포함.
+                #   저농도 가짜 독성 제거는 순환성·선택편향 우려 → 민감도 분석으로 이동.
+                #   N_Low_Tox_Drop은 진단 정보로만 기록(삭제하지 않음).
             # DRC 불량 종: 해당 종 데이터 전체 DROP
             else:
                 df_pooled = df_pooled[~sp_mask].copy()
@@ -439,15 +434,20 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
         cleaned_dfs[substance] = df_pooled
 
     drc_df = pd.DataFrame(drc_results)
+    if drc_df.empty:
+        drc_df = pd.DataFrame(columns=["Substance", "Species", "N_total", "N_toxic",
+                                       "DRC_OK", "R_squared", "Slope",
+                                       "Low_Conc_Tox_Ratio", "Q1_Threshold",
+                                       "N_Low_Tox_Drop", "Reason"])
     drc_df.to_csv(OUTPUT_DIR / f"Step2_5_DRC_Quality_{source_name}.csv", index=False)
 
-    ok_count = (drc_df["DRC_OK"] == True).sum()
-    bad_count = (drc_df["DRC_OK"] == False).sum()
+    ok_count = int((drc_df["DRC_OK"] == True).sum()) if not drc_df.empty else 0
+    bad_count = int((drc_df["DRC_OK"] == False).sum()) if not drc_df.empty else 0
     total_species = len(drc_df)
     print(f"\n[Step 2.5 요약]")
     print(f"  DRC OK: {ok_count}종 / 불량: {bad_count}종 / 총 {total_species}종 조합")
     print(f"  DRC OK 종만 TEL/PEL 도출에 사용 ★")
-    print(f"  가짜 독성 DROP: {total_dropped}개 (생존 80% 상향 아님, 데이터 삭제)")
+    print(f"  가짜 독성 DROP: 중단됨 (Primary는 survival 기준 EDS 전부 포함, 민감도 분석으로 이동)")
     print(f"  물질별 DRC OK 종: {drc_ok_species}")
 
     return cleaned_dfs, drc_df, drc_ok_species
@@ -457,109 +457,17 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
 # Step 2.7: 다물질 SHAP 타 독성 기여도 평가 ★신규
 # =============================================================================
 def step2_7_confounder_filtering(cleaned_dfs, drc_ok_species, source_name=""):
+    """[DEPRECATED] 구버전 confounder 필터 — 부호 오류(절대값 비교)로 재사용 금지.
+
+    이 함수는 |SHAP_mPELQ| > |SHAP_target| 절대값 비교로 confounder를 판정해
+    부호(방향) 정보를 무시하는 오류가 있었다. v4에서 sign-aware 방식으로
+    재설계되어 step2_7_confounder_filtering_v4로 대체되었다.
+    재사용을 막기 위해 호출 시 예외를 발생시킨다.
     """
-    다물질 XGBoost SHAP로 타 독성 기여도 평가
-
-    로직:
-    - 각 물질별: [target_conc, mPELQ_Metals, TOC_pct] → XGBoost → 생존율
-    - 각 샘플: |SHAP_mPELQ| > |SHAP_target| → 중금속이 타 독성 주원인 → DROP
-    - ML(SHAP) 기반 선별로 confounder-dominated 샘플 제거
-    """
-    print(f"\n{'='*70}")
-    print(f"[Step 2.7] 다물질 SHAP 타 독성 기여도 평가 — {source_name}")
-    print(f"{'='*70}")
-
-    filtered_dfs = {}
-    confounder_stats = []
-
-    for substance in TARGET_SUBSTANCES:
-        if substance not in cleaned_dfs or substance not in drc_ok_species:
-            continue
-        ok_spp = drc_ok_species[substance]
-        if not ok_spp:
-            continue
-
-        target_col = f"Sum_{substance}_OC_log"
-        df_sub = cleaned_dfs[substance]
-        df_pooled = df_sub[df_sub["Latin_Name_Species"].isin(ok_spp)].copy()
-
-        if len(df_pooled) < 15:
-            filtered_dfs[substance] = df_pooled
-            continue
-
-        # Feature: [target_conc, mPELQ_Metals, TOC_pct]
-        # Step 2.5에서 rename된 경우 대비: target_col 복원
-        for possible_col in [f"Sum_{substance}_OC_log", "Conc_log"]:
-            if possible_col in df_pooled.columns:
-                if possible_col != f"Sum_{substance}_OC_log":
-                    df_pooled = df_pooled.rename(columns={possible_col: f"Sum_{substance}_OC_log"})
-                break
-
-        target_col = f"Sum_{substance}_OC_log"
-        X = df_pooled[[target_col, "mPELQ_Metals", "TOC_pct"]].values.astype(np.float64)
-        y = df_pooled["Mean_Survival"].values.astype(np.float64)
-
-        # NaN check (mPELQ_Metals는 Step 1에서 보장됨)
-        valid_mask = ~np.any(np.isnan(X) | np.isinf(X), axis=1)
-        if valid_mask.sum() < 15:
-            filtered_dfs[substance] = df_pooled
-            continue
-
-        X_valid = X[valid_mask]
-        y_valid = y[valid_mask]
-        df_valid = df_pooled[valid_mask].copy()
-
-        feature_names = [f"{substance}_conc", "mPELQ_Metals", "TOC_pct"]
-
-        try:
-            dtrain = xgb.DMatrix(X_valid, label=y_valid, feature_names=feature_names)
-            model = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                "max_depth": 4, "seed": RANDOM_SEED}, dtrain, num_boost_round=100)
-            pred = model.predict(dtrain, pred_contribs=True)
-
-            shap_target = pred[:, 0]
-            shap_mpelq = pred[:, 1]
-            shap_toc = pred[:, 2]
-
-            # 타 독성 기여도 평가: |SHAP_mPELQ| > threshold×|SHAP_target| → confounder-dominated
-            confounder_ratio = 1.0
-            confounder_dominated = np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target)
-            n_dominated = int(confounder_dominated.sum())
-            n_total = len(confounder_dominated)
-
-            # confounder-dominated 샘플 DROP
-            df_clean = df_valid[~confounder_dominated].copy()
-
-            print(f"  {substance}: N={n_total} → confounder 제거 {n_dominated} "
-                  f"({n_dominated/n_total*100:.1f}%) → 최종 {len(df_clean)}")
-
-            confounder_stats.append({
-                "Substance": substance,
-                "N_total": n_total,
-                "N_confounder_dominated": n_dominated,
-                "N_remaining": len(df_clean),
-                "Pct_removed": round(n_dominated / n_total * 100, 1) if n_total > 0 else 0,
-                "Avg_SHAP_target": round(np.mean(np.abs(shap_target)), 4),
-                "Avg_SHAP_mPELQ": round(np.mean(np.abs(shap_mpelq)), 4),
-                "Avg_SHAP_TOC": round(np.mean(np.abs(shap_toc)), 4),
-            })
-
-            filtered_dfs[substance] = df_clean
-
-        except Exception as e:
-            print(f"  {substance}: SHAP 평가 실패 ({e}) → 필터링 없이 통과")
-            filtered_dfs[substance] = df_pooled
-
-    conf_df = pd.DataFrame(confounder_stats)
-    if len(conf_df) > 0:
-        conf_df.to_csv(OUTPUT_DIR / f"Step2_7_Confounder_Stats_{source_name}.csv", index=False)
-        total_removed = conf_df["N_confounder_dominated"].sum()
-        total_remaining = conf_df["N_remaining"].sum()
-        print(f"\n[Step 2.7 요약]")
-        print(f"  confounder-dominated 제거: {total_removed:,}개")
-        print(f"  잔여: {total_remaining:,}개")
-
-    return filtered_dfs, conf_df
+    raise NotImplementedError(
+        "step2_7_confounder_filtering은 부호 오류로 폐기되었습니다. "
+        "step2_7_confounder_filtering_v4를 사용하세요."
+    )
 
 
 # =============================================================================
@@ -608,7 +516,7 @@ def _compute_tel_pel_from_df(df, target_col):
 
 
 def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
-                                     n_folds=5, n_seeds=10, stability_threshold=0.80,
+                                     n_folds=None, n_seeds=None, stability_threshold=None,
                                      use_group_kfold=False):
     """
     v4 confounder 필터 재설계 — 부호 오류 수정 + 공선성 대응.
@@ -625,9 +533,24 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
       - 시료별 부호·dominance 출현 빈도 누적
       - 80% 안정성: (negative_sign_frequency >= 0.80) & (dominance_frequency >= 0.80)
 
+    재현성: n_folds/n_seeds/stability_threshold가 None이면 pipeline_v4_config.json에서 읽는다.
+      - TreeSHAP과 Interventional SHAP은 각각 별도의 음의 부호 빈도를 계산한다.
+      - Interventional SHAP 실패 시 해당 fold를 결측 처리하고 성공률을 기록한다.
+
     use_group_kfold=True: record-level KFold 대신 GroupKFold(그룹=station/sample cluster)를
-      사용해 동일 station의 train/test 중복(군집 누출)을 방지.
+      사용해 동일 station의 train/test 중복(군집 누출)을 방지. 각 seed마다 그룹을
+      shuffle하여 서로 다른 분할을 생성한다(repeated group split).
     """
+    # ---- 재현성 config 로딩 (None이면 config 값 사용) ----
+    cfg = load_config()
+    if n_folds is None:
+        n_folds = int(cfg.get("n_folds", 5))
+    if n_seeds is None:
+        n_seeds = int(cfg.get("n_repeats", 10))
+    if stability_threshold is None:
+        stability_threshold = float(cfg.get("stability_threshold", 0.80))
+    dominance_ratio = float(cfg.get("dominance_ratio", 1.0))
+    random_seed = int(cfg.get("random_seed", 42))
     print(f"\n{'='*70}")
     print(f"[Step 2.7-v4] confounder 필터 재설계 (진단) — {source_name}")
     print(f"{'='*70}")
@@ -694,9 +617,11 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         # ---- 반복 CV SHAP (OOF) ----
         # 시료별 누적 카운터
         n_assignments = np.zeros(n_total, dtype=int)          # OOF 예측 횟수
-        neg_sign_count = np.zeros(n_total, dtype=int)          # SHAP_mPELQ < 0 횟수
+        neg_sign_count = np.zeros(n_total, dtype=int)          # TreeSHAP SHAP_mPELQ < 0 횟수
+        neg_sign_count_inter = np.zeros(n_total, dtype=int)    # Interventional SHAP_mPELQ < 0 횟수
         dom_count_tree = np.zeros(n_total, dtype=int)         # TreeSHAP dominance 횟수
         dom_count_inter = np.zeros(n_total, dtype=int)         # Interventional dominance 횟수
+        n_inter_assignments = np.zeros(n_total, dtype=int)     # Interventional OOF 성공 횟수
         # ablation: 금속 포함/제외 OOF prediction difference 누적
         pred_with_metal = np.zeros(n_total, dtype=float)
         pred_without_metal = np.zeros(n_total, dtype=float)
@@ -705,12 +630,25 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         raw_rows = []
         bg_sizes = []  # fold별 interventional background 실제 행 수
         group_overlap_count = 0  # GroupKFold train/test 그룹 교집합 검사 (0이어야 정상)
+        n_inter_attempts = 0  # Interventional SHAP 시도 fold 수
+        n_inter_success = 0   # Interventional SHAP 성공 fold 수
 
         for seed in range(n_seeds):
             if use_group_kfold:
-                # GroupKFold: 동일 station/sample cluster가 train/test에 중복되지 않도록 분할
+                # GroupKFold: 동일 station/sample cluster가 train/test에 중복되지 않도록 분할.
+                # GroupKFold는 seed를 받지 않으므로, 각 seed마다 그룹 순서를 shuffle하여
+                # 서로 다른 분할을 생성한다(repeated group split).
+                rng = np.random.RandomState(random_seed + seed)
+                uniq_groups = np.unique(groups)
+                perm = rng.permutation(len(uniq_groups))
+                group_order = {g: i for i, g in enumerate(uniq_groups[perm])}
+                order = np.argsort([group_order[g] for g in groups])
+                X_shuf = X_valid[order]
+                groups_shuf = groups[order]
                 gkf = GroupKFold(n_splits=n_folds)
-                splits = list(gkf.split(X_valid, groups=groups))
+                splits = list(gkf.split(X_shuf, groups=groups_shuf))
+                # splits 인덱스는 order 기준 → 원래 인덱스로 매핑
+                splits = [(order[tr], order[te]) for tr, te in splits]
                 # 교집합 검사: 각 fold에서 train/test 그룹이 겹치면 카운트
                 for train_idx, test_idx in splits:
                     tr_g = set(groups[train_idx])
@@ -736,16 +674,22 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 shap_target_tree = pred_tree[:, 0]
 
                 # Interventional SHAP (background = 해당 fold training data)
+                # 실패 시 TreeSHAP으로 대체하지 않고 결측 처리한다(성공률 별도 기록).
+                n_inter_attempts += 1
+                inter_ok = False
                 try:
                     explainer = shap.TreeExplainer(
                         model3, X_tr, feature_perturbation="interventional")
                     shap_inter = explainer.shap_values(X_te)
                     shap_mpelq_inter = shap_inter[:, 1]
                     shap_target_inter = shap_inter[:, 0]
+                    inter_ok = True
+                    n_inter_success += 1
                 except Exception as e:
-                    print(f"  {substance} seed={seed}: Interventional SHAP 실패 ({e})")
-                    shap_mpelq_inter = shap_mpelq_tree
-                    shap_target_inter = shap_target_tree
+                    print(f"  {substance} seed={seed} fold={fold_id}: "
+                          f"Interventional SHAP 실패 ({e}) → 결측 처리")
+                    shap_mpelq_inter = np.full(len(test_idx), np.nan)
+                    shap_target_inter = np.full(len(test_idx), np.nan)
 
                 # ablation: 금속 제외 2-feature 모델
                 X_tr2 = X_tr[:, [0, 2]]
@@ -765,8 +709,13 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                         neg_sign_count[idx] += 1
                     if np.abs(shap_mpelq_tree[k]) > np.abs(shap_target_tree[k]):
                         dom_count_tree[idx] += 1
-                    if np.abs(shap_mpelq_inter[k]) > np.abs(shap_target_inter[k]):
-                        dom_count_inter[idx] += 1
+                    # Interventional: 성공한 fold만 누적 (실패 fold는 결측)
+                    if inter_ok:
+                        n_inter_assignments[idx] += 1
+                        if shap_mpelq_inter[k] < 0:
+                            neg_sign_count_inter[idx] += 1
+                        if np.abs(shap_mpelq_inter[k]) > np.abs(shap_target_inter[k]):
+                            dom_count_inter[idx] += 1
                     pred_with_metal[idx] += pred3[k]
                     pred_without_metal[idx] += pred2[k]
 
@@ -779,14 +728,16 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                         "fold_id": fold_id,
                         "is_oof": True,  # test fold = OOF
                         "shap_tree_mpelq": shap_mpelq_tree[k],
-                        "shap_interv_mpelq": shap_mpelq_inter[k],
+                        "shap_interv_mpelq": (shap_mpelq_inter[k] if inter_ok else np.nan),
                         "shap_tree_target": shap_target_tree[k],
-                        "shap_interv_target": shap_target_inter[k],
+                        "shap_interv_target": (shap_target_inter[k] if inter_ok else np.nan),
                         "neg_flag": int(shap_mpelq_tree[k] < 0),
+                        "neg_flag_inter": (int(shap_mpelq_inter[k] < 0) if inter_ok else np.nan),
                         "dominance_flag_tree": int(
                             np.abs(shap_mpelq_tree[k]) > np.abs(shap_target_tree[k])),
-                        "dominance_flag_inter": int(
-                            np.abs(shap_mpelq_inter[k]) > np.abs(shap_target_inter[k])),
+                        "dominance_flag_inter": (
+                            int(np.abs(shap_mpelq_inter[k]) > np.abs(shap_target_inter[k]))
+                            if inter_ok else np.nan),
                         "pred_with_metal": pred3[k],
                         "pred_without_metal": pred2[k],
                         "pred_diff": pred3[k] - pred2[k],
@@ -797,12 +748,16 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                                   out=np.zeros(n_total), where=n_assignments > 0)
         dom_freq_tree = np.divide(dom_count_tree, n_assignments,
                                   out=np.zeros(n_total), where=n_assignments > 0)
-        dom_freq_inter = np.divide(dom_count_inter, n_assignments,
-                                   out=np.zeros(n_total), where=n_assignments > 0)
+        # Interventional: 성공한 fold만 분모로 사용 (실패 fold는 결측)
+        neg_sign_freq_inter = np.divide(neg_sign_count_inter, n_inter_assignments,
+                                        out=np.zeros(n_total), where=n_inter_assignments > 0)
+        dom_freq_inter = np.divide(dom_count_inter, n_inter_assignments,
+                                   out=np.zeros(n_total), where=n_inter_assignments > 0)
+        inter_success_rate = (n_inter_success / n_inter_attempts) if n_inter_attempts > 0 else 0.0
 
-        # 80% 안정성 판정 (부호와 dominance를 별도 조건으로)
+        # 80% 안정성 판정 (부호와 dominance를 별도 조건으로, attribution 방법별 독립)
         stable_tree = (neg_sign_freq >= stability_threshold) & (dom_freq_tree >= stability_threshold)
-        stable_inter = (neg_sign_freq >= stability_threshold) & (dom_freq_inter >= stability_threshold)
+        stable_inter = (neg_sign_freq_inter >= stability_threshold) & (dom_freq_inter >= stability_threshold)
 
         # ---- Sensitivity별 포함 시료 수 + 잠정 TEL/PEL ----
         sens1_df = df_valid[~stable_tree].reset_index(drop=True)
@@ -862,6 +817,9 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "n_oof_per_sample_max": int(n_assignments.max()) if n_total > 0 else 0,
             "interventional_background_min": int(min(bg_sizes)) if bg_sizes else 0,
             "interventional_background_max": int(max(bg_sizes)) if bg_sizes else 0,
+            "interventional_success_rate": round(inter_success_rate, 4),
+            "interventional_attempts": n_inter_attempts,
+            "interventional_successes": n_inter_success,
             "Mean_ablation_pred_diff": round(mean_ablation, 4),
             "Median_ablation_pred_diff": round(med_ablation, 4),
             "IQR_ablation_pred_diff": round(q75_ablation - q25_ablation, 4),
@@ -1161,10 +1119,10 @@ def main():
     group_kfold_mode = "--group-kfold" in sys.argv
     print("=" * 70)
     print("고도화 파이프라인 v4: 신뢰도 기반 TEL/PEL 도출")
-    print("  Step 1: DB 정제 (EqP + mPELQ 필터)")
+    print("  Step 1: DB 정제 (mPELQ 필터)")
     print("  Step 2: XGBoost SHAP 종 선별")
-    print("  Step 2.5: DRC 평가 → DRC OK 종만 선별 + 가짜 독성 DROP")
-    print("  Step 2.7: 다물질 SHAP confounder 필터링")
+    print("  Step 2.5: DRC 평가 → DRC OK 종만 선별")
+    print("  Step 2.7: 다물질 SHAP confounder 필터링 (진단/Sensitivity)")
     print("  Step 3: SHAP EDS/NEDS → TEL/PEL")
     print("  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC)")
     if diagnose_mode:
