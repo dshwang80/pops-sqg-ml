@@ -103,19 +103,13 @@ for source_name, db_path in sources:
         n_total = len(shap_mpelq)
 
         # --- 현재 필터 (절댓값) ---
-        confounder_ratio = 1.5 if substance == "TCDD" else 1.0
-        if substance == "TCDD":
-            cur_dominated = np.zeros(n_total, dtype=bool)
-        else:
-            cur_dominated = np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target)
+        confounder_ratio = 1.0
+        cur_dominated = np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target)
 
         # --- 부호 조건 추가 필터 (리뷰어 제안) ---
         # SHAP_mPELQ < 0 AND |SHAP_mPELQ| > ratio*|SHAP_target|
-        if substance == "TCDD":
-            sign_dominated = np.zeros(n_total, dtype=bool)
-        else:
-            sign_dominated = (shap_mpelq < 0) & \
-                             (np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target))
+        sign_dominated = (shap_mpelq < 0) & \
+                         (np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target))
 
         n_cur = int(cur_dominated.sum())
         n_sign = int(sign_dominated.sum())

@@ -87,10 +87,10 @@ def load_biota_csv():
 # ============================================================
 # 물질 키 매핑
 # ============================================================
-SUBSTANCES = ['DDTs', 'CHLs', 'PCBs', 'TCDD']
-SUB_LABELS = {'DDTs': 'ΣDDTs', 'CHLs': 'ΣCHLs', 'PCBs': 'ΣPCBs', 'TCDD': '2,3,7,8-TCDD'}
+SUBSTANCES = ['DDTs', 'CHLs', 'PCBs']
+SUB_LABELS = {'DDTs': 'ΣDDTs', 'CHLs': 'ΣCHLs', 'PCBs': 'ΣPCBs'}
 # 모니터링 컬럼명 → 내부 키
-SUB_MAP = {'DDTs': 'DDT', 'CHLs': 'CHLs', 'PCBs': 'PCB', 'TCDD': 'TCDD'}
+SUB_MAP = {'DDTs': 'DDT', 'CHLs': 'CHLs', 'PCBs': 'PCB'}
 
 # ============================================================
 # 1. Empirical SQG (Method 1) — ng/g dw
@@ -99,29 +99,29 @@ SUB_MAP = {'DDTs': 'DDT', 'CHLs': 'CHLs', 'PCBs': 'PCB', 'TCDD': 'TCDD'}
 # CCME 지침 준수: 원래 단위(ug/kg dw)에서 기하평균
 #   TEL = sqrt(EDS P15 × NEDS P50), PEL = sqrt(EDS P50 × NEDS P85)
 # 로그 공간이 아닌 원래 단위에서 percentile 계산 후 기하평균 (Method B)
-# Method 1: Empirical SQG (TEL/PEL) — TEQ 기반 (2,3,7,8-TCDD TEF=1.0)
-#   mPELQ 0.5 + confounder 1.5×, N=22, ROC-AUC 0.933
+# Method 1: Empirical SQG (TEL/PEL)
+#   mPELQ 0.5 + confounder 1.5×, ROC-AUC 0.933
 #   integrated_matching_db_v2.csv: NOAA SEDTOX 단위 = pg/g → ng/g 변환
-EMP_TEL = {'DDT': 4.9834, 'CHLs': 3.9143, 'PCB': 8.5557, 'TCDD': 0.0014}   # TCDD: 1.4 pg TEQ/g dw
-EMP_PEL = {'DDT': 21.8168, 'CHLs': 23.8046, 'PCB': 51.6125, 'TCDD': 0.0021}  # TCDD: 2.1 pg TEQ/g dw
+EMP_TEL = {'DDT': 4.9834, 'CHLs': 3.9143, 'PCB': 8.5557}
+EMP_PEL = {'DDT': 21.8168, 'CHLs': 23.8046, 'PCB': 51.6125}
 
-# v3 pipeline TEL (개별 모델) — 원래 단위 기하평귭으로 재계산 (Method B, CCME 지침)
+# v3 pipeline TEL (개별 모델) — 원래 단위 기하평균으로 재계산 (Method B, CCME 지침)
 V3_TEL = {
-    'NOAA':       {'DDTs': 4.6183, 'CHLs': 3.0118, 'PCBs': 8.1006, 'TCDD': 0.0014},
+    'NOAA':       {'DDTs': 4.6183, 'CHLs': 3.0118, 'PCBs': 8.1006},
     'SCCWRP':     {'DDTs': 7.7567, 'CHLs': 3.8084, 'PCBs': 18.2456},
-    'Integrated': {'DDTs': 4.9834, 'CHLs': 3.9143, 'PCBs': 8.5557, 'TCDD': 0.0014},
+    'Integrated': {'DDTs': 4.9834, 'CHLs': 3.9143, 'PCBs': 8.5557},
 }
 V3_PEL = {
-    'NOAA':       {'DDTs': 22.8303, 'CHLs': 35.6132, 'PCBs': 52.1772, 'TCDD': 0.0021},
+    'NOAA':       {'DDTs': 22.8303, 'CHLs': 35.6132, 'PCBs': 52.1772},
     'SCCWRP':     {'DDTs': 32.7149, 'CHLs': 10.9047, 'PCBs': 38.8303},
-    'Integrated': {'DDTs': 21.8168, 'CHLs': 23.8046, 'PCBs': 51.6125, 'TCDD': 0.0021},
+    'Integrated': {'DDTs': 21.8168, 'CHLs': 23.8046, 'PCBs': 51.6125},
 }
 
 # ============================================================
 # 2. CCME / NOAA / ANZECC — ng/g dw (참고용 국제 기준)
 # ============================================================
-CCME_ISQG = {'DDT': 1.19, 'CHLs': 2.26, 'PCB': 21.5, 'TCDD': 0.00085}
-CCME_PEL  = {'DDT': 4.77, 'CHLs': 4.79, 'PCB': 189.0, 'TCDD': 0.0215}
+CCME_ISQG = {'DDT': 1.19, 'CHLs': 2.26, 'PCB': 21.5}
+CCME_PEL  = {'DDT': 4.77, 'CHLs': 4.79, 'PCB': 189.0}
 
 NOAA_ERL = {'DDT': 1.58, 'CHLs': 0.5,  'PCB': 22.7}
 NOAA_ERM = {'DDT': 46.1, 'CHLs': 6.0,  'PCB': 180.0}
@@ -129,54 +129,21 @@ NOAA_ERM = {'DDT': 46.1, 'CHLs': 6.0,  'PCB': 180.0}
 ANZECC_ISQG  = {'DDT': 1.2,  'CHLs': 4.5,  'PCB': 34.0}
 ANZECC_HIGH  = {'DDT': 5.0,  'CHLs': 9.0,  'PCB': 280.0}
 
-# TCDD 국제 기준 (pg TEQ/g dw → ng TEQ/g dw; TEQ 기반, 참고용)
-# CCME PCDD/F: ISQG=0.85 pg TEQ/g, PEL=21.5 pg TEQ/g
-# 호주 Manning 2023: SQGV=65 pg TEQfish/g, SQG-high=215 pg TEQfish/g
-# 주의: TEQ 기반이므로 단일 2,3,7,8-TCDD와 직접 비교 불가
-CCME_TCDD_ISQG_TEQ = 0.00085   # ng TEQ/g dw
-CCME_TCDD_PEL_TEQ  = 0.0215    # ng TEQ/g dw
-
 # ============================================================
 # 3. TRA 파라미터 (Method 3)
 # ============================================================
 # BSAF P95 (L/kg OC)
 # DDT/PCB/CHLs: 문헌 원시데이터 해양종 P95 (extract_bsaf_marine.py)
-# TCDD: Manning 2023 Sydney Harbor 현장데이터 95th percentile = 0.1
-#   선행연구진 엑셀(1. 2378-TCDD_240930.xlsx) 채택값
-#   이전: ERED DB 어류 n=15 P95=0.22 → Manning 현장 BSAF=0.1로 변경 (2026-07-29)
-BSAF_P95 = {'DDT': 1.44, 'PCB': 5.90, 'CHLs': 4.98, 'TCDD': 0.1}
-
-# ============================================================
-# 4. TCDD 준거치 (3가지 방법 통합)
-# ============================================================
-# Method 1: Empirical SQG (TEL/PEL) — integrated_matching_db_v2.csv
-#   EDS=735, NEDS=483, NOAA SEDTOX TCDD 단위 = pg/g → ng/g 변환
-# Method 2: FACR/EqP — WQC × Koc × f_oc / 1000
-#   log Kow=6.8 (HSDB), log Koc=6.59 (Di Toro), WQC=10 pg/L (EPA R4)
-# Method 3: TRA (TRG) — 엑셀 LR50 24행 lnorm SSD HC1(99%)
-#   TEQ 기반: 2,3,7,8-TCDD WHO TEF=1.0 → pg/g = pg TEQ/g
-#   HC1(lipid) = 436.1093 pg/g lipid (lnorm 단일 모델, 24행)
-#   TRG(ww) = HC1 × f_lipid = 436.1093 × 0.059 = 25.7304 pg TEQ/g ww
-#   이전: ERED NEF 11종 SSD HC5 = 34.4 pg/g ww → LR50 HC1 기반으로 변경 (2026-07-29)
-TCDD_TRG = 0.0000257304   # mg/kg ww (= 25.7304 pg TEQ/g ww)  Method 3 — LR50 HC1 × f_lipid
-
-# ★f_lipid=5.9% (SSD 실측 종 13종 median, Manning 2023 Table 2) — 2026-07-27 확정
-#   공식: C_sediment = HC1(lipid) × f_oc / BSAF → pg TEQ/g dw
-#   436.1093 × 0.01 / 0.1 = 43.6109 pg TEQ/g dw
-#   (ww 경유: TRG(ww) × f_oc / (BSAF × f_lipid)로 동일 — f_lipid 상쇄)
-#   이전: TRG=34.4(ERED 11종 HC5), BSAF=0.22 → 26.5 pg/g dw (2026-07-29 변경)
-F_LIPID_TCDD = 0.059    # 5.9% (어류 SSD egg median, Manning 2023)
+BSAF_P95 = {'DDT': 1.44, 'PCB': 5.90, 'CHLs': 4.98}
 
 # TRG (mg/kg ww) — 본 연구 도출값
 # DDT: CBR(3.73) ÷ AF(50) = 0.0746 (SSD 불가, CBR÷AF fallback)
 # PCB: SSD HC5 = 0.6689
 # CHLs: CBR(0.13) ÷ AF(50) = 0.0026 (SSD 불가, CBR÷AF fallback)
-# TCDD: SSD HC1 = 0.0000257304 (LR50 24행 lnorm, 99% 보호, HC1×f_lipid)
-TRG = {'DDT': 0.0746, 'PCB': 0.6689, 'CHLs': 0.0026, 'TCDD': 0.0000257304}
+TRG = {'DDT': 0.0746, 'PCB': 0.6689, 'CHLs': 0.0026}
 
 # 지방 함량 / 유기탄소 함량
 # DDT/PCB/CHLs: f_lipid = 2% (무척추생물종 기반)
-# TCDD: f_lipid = 5.9% (어류 SSD egg median, Manning 2023) — 별도 정의 (F_LIPID_TCDD)
 F_LIPID = 0.02   # 2% (무척추생물종, DDT/PCB/CHLs 공통)
 F_OC = 0.01      # 1% (1%OC 정규화)
 
@@ -185,23 +152,18 @@ TRA_SQG = {}
 for chem in ['DDT', 'PCB', 'CHLs']:
     TRA_SQG[chem] = TRG[chem] / (BSAF_P95[chem] * F_LIPID / F_OC) * 1000
 # DDT: 25.90, PCB: 56.69, CHLs: 0.26
-# TCDD: f_lipid=5.9% (어류 SSD egg median) 별도 적용
-#   C_sediment = TRG × f_oc / (BSAF × f_lipid) = 0.0257304 × 0.01 / (0.1 × 0.059) × 1000
-TCDD_TRA_SQG = TCDD_TRG * 1000 * F_OC / (BSAF_P95['TCDD'] * F_LIPID_TCDD)  # ng/g dw = 0.0436
-TRA_SQG['TCDD'] = TCDD_TRA_SQG  # 0.0436 ng/g dw = 43.6 pg TEQ/g dw
 
 # ============================================================
 # 4. 해수 기준 (ng/L)
 # ============================================================
-WQC = {'DDTs': 31.0, 'CHLs': 19.0, 'PCBs': 201.7, 'TCDD': 0.296}        # 본 연구 도출 (TCDD: ECOTOX R코드 SSD 만성 HC1, 어류 7종 AhR 필터, 99% 보호, 296 pg/L=0.296 ng/L)
+WQC = {'DDTs': 31.0, 'CHLs': 19.0, 'PCBs': 201.7}        # 본 연구 도출
 EPA_Chronic = {'DDTs': 1.0, 'CHLs': 4.3, 'PCBs': 30.0}   # EPA reference
 
 # EqP SQG: WQC × K_OC × F_OC / 1000 → ng/g dw
-K_OC = {'DDTs': 155000, 'CHLs': 400000, 'PCBs': 530000, 'TCDD': 3890451}
+K_OC = {'DDTs': 155000, 'CHLs': 400000, 'PCBs': 530000}
 # Method 2: EqP SQG — WQC × Koc × f_oc / 1000 → ng/g dw
-#   TCDD: WQC=0.296 ng/L (ECOTOX R코드 SSD 만성 HC1, 어류 7종, 99% 보호), Koc=3,890,451 L/kg, f_oc=0.01 → 11.52 pg TEQ/g dw
 EqP_SQG = {s: WQC[s] * K_OC[s] * F_OC / 1000 for s in SUBSTANCES if s in WQC and s in K_OC}
-# DDTs: 48.05, CHLs: 76.0, PCBs: 1069.01, TCDD: 0.01152
+# DDTs: 48.05, CHLs: 76.0, PCBs: 1069.01
 
 # ============================================================
 # 5. 통합 딕셔너리 (스크립트별 호환용)
@@ -244,7 +206,6 @@ if __name__ == '__main__':
     print(f"\n[TRA-SQG (P95, f_lipid={F_LIPID})] ng/g dw")
     for k in ['DDT', 'CHLs', 'PCB']:
         print(f"  {k:6s}: {TRA_SQG[k]:.2f}")
-    print(f"  {'TCDD':6s}: {TCDD_TRA_SQG:.4f} (f_lipid={F_LIPID_TCDD})")
     print(f"\n[EqP SQG] ng/g dw")
     for k in SUBSTANCES:
         print(f"  {k:6s}: {EqP_SQG[k]:.2f}")

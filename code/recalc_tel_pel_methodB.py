@@ -15,7 +15,7 @@ run_pipeline_v3.py Step 3는 로그공간(Method A)으로 TEL/PEL을 계산한�
 (output_v3/edsneds_data/Integrated_{sub}_edsneds.csv)를 읽어
 Method B로 재계산하고, 논문 확정값(sqg_config.py)과 대조 검증한다.
 
-입력: output_v3/edsneds_data/Integrated_{DDTs,CHLs,PCBs,TCDD}_edsneds.csv
+입력: output_v3/edsneds_data/Integrated_{DDTs,CHLs,PCBs}_edsneds.csv
 출력: output_v3/TEL_PEL_MethodB_final.csv
 """
 import pandas as pd
@@ -28,15 +28,13 @@ OUT_DIR = BASE / "output"
 
 # 논문 확정값 (sqg_config.py EMP_TEL / EMP_PEL, 단위 µg/kg dw = ng/g dw)
 # DDTs/CHLs/PCBs: Method B 재계산값 (이 스크립트의 검증 대상)
-# TCDD: 별도 필터(mPELQ 0.5 + confounder 1.5×) 적용 후 N=22에서 도출된 값
-#       → 이 스크립트의 edsneds_data(필터 전)와 직접 비교 불가. 별도 처리.
 PAPER = {
     "DDTs": {"TEL": 4.9834, "PEL": 21.8168},
     "CHLs": {"TEL": 3.9143, "PEL": 23.8046},
     "PCBs": {"TEL": 8.5557, "PEL": 51.6125},
 }
 
-# Method B 재계산 대상 물질 (TCDD 제외 — 별도 필터 적용)
+# Method B 재계산 대상 물질
 METHOD_B_SUBSTANCES = ["DDTs", "CHLs", "PCBs"]
 
 
