@@ -1,0 +1,18 @@
+{
+  "pipeline_version": "v4",
+  "random_seed": 42,
+  "repeat_seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  "n_folds": 5,
+  "n_repeats": 10,
+  "stability_threshold": 0.80,
+  "dominance_ratio": 1.0,
+  "interventional_background_sampling": "full_training_fold",
+  "package_versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.2.0",
+    "shap": "0.51.0"
+  }
+}
