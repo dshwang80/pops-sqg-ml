@@ -1219,9 +1219,12 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         n_drc_inconsistent = int(drc_inconsistent.sum())
         # 제외·유지 EDS 농도 중앙값 (로그 스케일 → 원래 µg/kg dw 복원)
         # ★ 실제 제외 = primary_excluded, 후보 = drc_inconsistent (uncertain_eds)로 분리
+        # ★ 실제 Primary 유지 EDS = is_eds_raw & ~primary_excluded (안전장치 발동 시
+        #   후보자료도 유지되므로 target_supported_eds가 아니라 primary_retained_eds 기준)
+        primary_retained_eds = is_eds_raw & ~primary_excluded
         excluded_conc_log = conc_obs[primary_excluded]      # 실제 제외자료
         candidate_conc_log = conc_obs[uncertain_eds]        # 후보자료 (제외 여부 무관)
-        retained_conc_log = conc_obs[target_supported_eds]  # 유지 EDS
+        retained_conc_log = conc_obs[primary_retained_eds]  # 실제 Primary 유지 EDS
         excl_med_orig = float(np.median(10 ** excluded_conc_log - 1)) if len(excluded_conc_log) > 0 else np.nan
         cand_med_orig = float(np.median(10 ** candidate_conc_log - 1)) if len(candidate_conc_log) > 0 else np.nan
         ret_med_orig = float(np.median(10 ** retained_conc_log - 1)) if len(retained_conc_log) > 0 else np.nan
@@ -1265,8 +1268,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         p5_ablation = float(np.quantile(pred_diff, 0.05))
         p95_ablation = float(np.quantile(pred_diff, 0.95))
 
-        # EDS/NEDS별 ablation 분포 (Primary 분류 기준: target-supported EDS vs NEDS)
-        eds_ablation = pred_diff[target_supported_eds]
+        # EDS/NEDS별 ablation 분포 (실제 Primary EDS 기준: primary_retained_eds vs NEDS)
+        eds_ablation = pred_diff[primary_retained_eds]
         neds_ablation = pred_diff[is_neds]
         mean_ablation_eds = float(np.mean(eds_ablation)) if len(eds_ablation) > 0 else np.nan
         mean_ablation_neds = float(np.mean(neds_ablation)) if len(neds_ablation) > 0 else np.nan
@@ -1304,7 +1307,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         print(f"    Ablation: 금속 포함 시 OOF 예측 평균 변화 {mean_ablation:+.4f} "
               f"(음수 {n_ablation_negative} 시료)")
         print(f"    C80 gate 검증: 후보 {n_drc_inconsistent}건 중 fold별 below_c80≥{min_success}회 {c80_below_count} / "
-              f"미달 {c80_above_count} (유효 C80 {n_valid_c80}건) "
+              f"미달 {c80_above_count} (유효 C80 기록 {n_valid_c80}건) "
               f"→ 실제 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg (1% TOC 정규화)")
 
         diag_rows.append({
@@ -1340,7 +1343,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "N_ablation_negative_pct": round(100.0 * n_ablation_negative / n_total, 2),
             "C80_below_count": c80_below_count,
             "C80_above_count": c80_above_count,
-            "N_valid_C80_assignments": n_valid_c80,
+            "N_records_with_valid_C80": n_valid_c80,
             "N_DRC_inconsistent": n_drc_inconsistent,
             "Excluded_EDS_Conc_Median_OC1pct": (round(excl_med_orig, 4) if not np.isnan(excl_med_orig) else None),
             "Candidate_EDS_Conc_Median_OC1pct": (round(cand_med_orig, 4) if not np.isnan(cand_med_orig) else None),
