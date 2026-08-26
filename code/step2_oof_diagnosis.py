@@ -58,11 +58,48 @@ TOC_IMPORTANCE_RATIO = 1.5
 
 
 def get_group_col(df):
-    """GroupKFold용 그룹 컬럼 결정 (run_pipeline_v4.py와 동일 우선순위)."""
-    for cand in ["station_key", "Station", "sample_key", "SampleID"]:
-        if cand in df.columns:
-            return cand
-    return "record_id"
+    """GroupKFold용 group_id를 행별 우선순위 결합으로 생성한다 (run_pipeline_v4.py와 동일).
+
+    우선순위: station_key → sample_key → StudyID+Station → SampleID → 좌표 → record_id.
+    NOAA의 Station은 고유 정점이 아니므로 좌표(round4)로 그룹핑한다.
+    """
+    n = len(df)
+    if "record_id" not in df.columns:
+        df = df.copy()
+        df["record_id"] = [f"r{i:06d}" for i in range(n)]
+    rec_ids = df["record_id"].astype(str).values
+    groups = rec_ids.copy()
+
+    if "Start_Latitude" in df.columns and "Start_Longitude" in df.columns:
+        lat = df["Start_Latitude"]
+        lon = df["Start_Longitude"]
+        mask = lat.notna().values & lon.notna().values
+        if mask.any():
+            groups[mask] = ("coord:" + lat[mask].round(4).astype(str).values
+                            + "|" + lon[mask].round(4).astype(str).values)
+    if "SampleID" in df.columns:
+        vals = df["SampleID"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sid:" + vals[mask].astype(str).values
+    if "StudyID" in df.columns and "Station" in df.columns:
+        sid = df["StudyID"]
+        st = df["Station"]
+        mask = sid.notna().values & st.notna().values
+        if mask.any():
+            groups[mask] = ("ss:" + sid[mask].astype(str).values
+                            + "|" + st[mask].astype(str).values)
+    if "sample_key" in df.columns:
+        vals = df["sample_key"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sak:" + vals[mask].astype(str).values
+    if "station_key" in df.columns:
+        vals = df["station_key"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sk:" + vals[mask].astype(str).values
+    return groups
 
 
 def oof_shap_species_selection(substance_dfs, source_name=""):
@@ -144,16 +181,9 @@ def oof_shap_species_selection(substance_dfs, source_name=""):
                 imp_chem = imp_toc = cor_chem = np.nan
 
             # ---- OOF SHAP (5-fold × 10회 GroupKFold) ----
-            group_col = get_group_col(df_sp)
-            # NaN station은 record-level(각각 고유 그룹)로 처리 — 서로 무관한 기록을
-            # 같은 그룹으로 오인해 leakage를 만들지 않도록 함.
-            groups = df_sp[group_col].astype(str).values
-            missing_mask = df_sp[group_col].isna().values
-            if missing_mask.any():
-                groups = groups.copy()
-                groups[missing_mask] = [
-                    f"__MISSING_{i}" for i in range(len(groups)) if missing_mask[i]
-                ]
+            # 행별 우선순위 결합으로 group_id 생성 (station_key → sample_key →
+            # StudyID+Station → SampleID → 좌표 → record_id).
+            groups = get_group_col(df_sp)
             n_groups = len(np.unique(groups))
 
             # GroupKFold는 n_splits <= n_groups 필요. 불가능하면 OOF 불가(결측 처리).

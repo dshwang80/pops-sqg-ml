@@ -252,12 +252,81 @@ CHEM_DIRECTION_THRESHOLD = -0.30
 TOC_IMPORTANCE_RATIO = 1.5
 
 
-def _get_group_col(df):
-    """GroupKFold용 그룹 컬럼 결정 (station/sample cluster 우선순위)."""
-    for cand in ["station_key", "Station", "sample_key", "SampleID"]:
-        if cand in df.columns and df[cand].notna().sum() > 1:
-            return cand
-    return "record_id"
+def _build_group_ids(df):
+    """GroupKFold용 group_id를 행별 우선순위 결합으로 생성한다.
+
+    사용자 확정 우선순위 (2026-08-26):
+      1. station_key
+      2. sample_key
+      3. StudyID + Station
+      4. SampleID
+      5. 좌표 (Start_Latitude + Start_Longitude) — NOAA 전용
+      6. record_id (모든 식별자가 결측일 때만)
+
+    각 행은 위 우선순위에서 첫 번째로 존재하는(비결측) 식별자를 사용한다.
+    결측 식별자는 건너뛰고, 모든 식별자가 결측이면 record_id(고유)를 사용한다.
+
+    ★ NOAA의 Station은 고유 정점 식별자가 아니다 (2026-08-26 발견):
+      - Station "3"이 48행·12좌표·2지역·18연도에 걸쳐 존재
+      - 좌표가 여러 개인 Station이 739개
+      - NOAA에는 StudyID가 없어 Station은 "연구 내부 임의 라벨"일 뿐
+      → NOAA 행은 좌표(round4)로 그룹핑해야 정점을 고유하게 식별할 수 있다.
+      SCCWRP 행은 station_key 등이 존재하므로 좌표까지 내려가지 않는다.
+
+    반환: str 배열 (len(df),) — 각 행의 group_id.
+    """
+    n = len(df)
+    if "record_id" not in df.columns:
+        df = df.copy()
+        df["record_id"] = [f"r{i:06d}" for i in range(n)]
+    rec_ids = df["record_id"].astype(str).values
+
+    # 결과 배열을 record_id로 초기화 (모든 식별자 결측 시 고유 그룹)
+    groups = rec_ids.copy()
+
+    # 우선순위가 낮은 것부터 덮어쓰고, 높은 우선순위가 마지막에 덮어쓴다.
+    # (같은 행에 여러 식별자가 있어도 최종적으로 가장 높은 우선순위가 남는다)
+
+    # 5. 좌표 (NOAA 전용 — Station이 고유 정점이 아니므로)
+    if "Start_Latitude" in df.columns and "Start_Longitude" in df.columns:
+        lat = df["Start_Latitude"]
+        lon = df["Start_Longitude"]
+        mask = lat.notna().values & lon.notna().values
+        if mask.any():
+            groups[mask] = ("coord:" + lat[mask].round(4).astype(str).values
+                            + "|" + lon[mask].round(4).astype(str).values)
+
+    # 4. SampleID
+    if "SampleID" in df.columns:
+        vals = df["SampleID"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sid:" + vals[mask].astype(str).values
+
+    # 3. StudyID + Station
+    if "StudyID" in df.columns and "Station" in df.columns:
+        sid = df["StudyID"]
+        st = df["Station"]
+        mask = sid.notna().values & st.notna().values
+        if mask.any():
+            groups[mask] = ("ss:" + sid[mask].astype(str).values
+                            + "|" + st[mask].astype(str).values)
+
+    # 2. sample_key
+    if "sample_key" in df.columns:
+        vals = df["sample_key"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sak:" + vals[mask].astype(str).values
+
+    # 1. station_key (최고 우선순위)
+    if "station_key" in df.columns:
+        vals = df["station_key"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sk:" + vals[mask].astype(str).values
+
+    return groups
 
 
 def _oof_shap_for_species(X, y, groups, random_seed):
@@ -379,19 +448,10 @@ def step2_species_selection(substance_dfs, source_name=""):
                 imp_chem = imp_toc = cor_chem = np.nan
 
             # ---- OOF SHAP (5-fold × 10회 GroupKFold) ----
-            group_col = _get_group_col(df_sp)
-            # ★ NaN 처리: astype(str) 후에도 ArrowStringArray의 NaN은 실제 float NaN으로
-            # 남아 문자열 비교("nan")로 잡히지 않는다. isna() 기반으로 정확히 검출해야
-            # 한다. NaN station은 record-level(각각 고유 그룹)로 처리해 leakage 방지.
-            groups = df_sp[group_col].astype(str).values
-            rec_ids = df_sp["record_id"].astype(str).values if "record_id" in df_sp.columns else None
-            is_missing = df_sp[group_col].isna().values
-            if rec_ids is not None:
-                groups = np.where(is_missing, rec_ids, groups).astype(str)
-            else:
-                groups = np.where(is_missing,
-                                 [f"__MISSING_{i}" for i in range(len(groups))],
-                                 groups).astype(str)
+            # ★ 행별 우선순위 결합으로 group_id 생성 (station_key → sample_key →
+            #   StudyID+Station → SampleID → 좌표 → record_id).
+            #   NOAA의 Station은 고유 정점이 아니므로 좌표로 그룹핑한다.
+            groups = _build_group_ids(df_sp)
             n_groups = len(np.unique(groups))
 
             if n_groups < N_OOF_FOLDS:
@@ -776,20 +836,11 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         else:
             df_valid["sample_id"] = df_valid["record_id"]
 
-        # GroupKFold용 그룹 컬럼 결정 (station/sample cluster 우선순위)
-        # 우선순위: station_key > Station > sample_key > SampleID > record_id
-        group_col = None
-        for cand in ["station_key", "Station", "sample_key", "SampleID"]:
-            if cand in df_valid.columns and df_valid[cand].notna().sum() > 1:
-                group_col = cand
-                break
-        if group_col is None:
-            group_col = "record_id"  # station 식별 불가 → record-level (군집 없음)
-        # 결측 group은 "NA"로 묶지 않고 각 행의 record_id로 대체 (군집 오염 방지)
-        groups = df_valid[group_col].astype(str).values
-        rec_ids = df_valid["record_id"].astype(str).values
-        is_missing = (groups == "nan") | (groups == "None") | (groups == "")
-        groups = np.where(is_missing, rec_ids, groups).astype(str)
+        # GroupKFold용 group_id: 행별 우선순위 결합 (station_key → sample_key →
+        # StudyID+Station → SampleID → 좌표 → record_id).
+        # NOAA의 Station은 고유 정점이 아니므로 좌표로 그룹핑한다.
+        groups = _build_group_ids(df_valid)
+        group_col = "group_id"  # 진단 기록용 (실제 컬럼은 아님)
 
         feature_names = [f"{substance}_conc", "mPELQ_Metals", "TOC_pct"]
 
