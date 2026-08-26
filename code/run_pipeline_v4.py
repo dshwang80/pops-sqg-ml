@@ -257,8 +257,8 @@ def _build_group_ids(df):
 
     사용자 확정 우선순위 (2026-08-26):
       1. station_key
-      2. sample_key
-      3. StudyID + Station
+      2. StudyID + Station
+      3. sample_key
       4. SampleID
       5. 좌표 (Start_Latitude + Start_Longitude) — NOAA 전용
       6. record_id (모든 식별자가 결측일 때만)
@@ -303,7 +303,14 @@ def _build_group_ids(df):
         if mask.any():
             groups[mask] = "sid:" + vals[mask].astype(str).values
 
-    # 3. StudyID + Station
+    # 3. sample_key
+    if "sample_key" in df.columns:
+        vals = df["sample_key"]
+        mask = vals.notna().values
+        if mask.any():
+            groups[mask] = "sak:" + vals[mask].astype(str).values
+
+    # 2. StudyID + Station
     if "StudyID" in df.columns and "Station" in df.columns:
         sid = df["StudyID"]
         st = df["Station"]
@@ -311,13 +318,6 @@ def _build_group_ids(df):
         if mask.any():
             groups[mask] = ("ss:" + sid[mask].astype(str).values
                             + "|" + st[mask].astype(str).values)
-
-    # 2. sample_key
-    if "sample_key" in df.columns:
-        vals = df["sample_key"]
-        mask = vals.notna().values
-        if mask.any():
-            groups[mask] = "sak:" + vals[mask].astype(str).values
 
     # 1. station_key (최고 우선순위)
     if "station_key" in df.columns:
@@ -337,19 +337,25 @@ def _oof_shap_for_species(X, y, groups, random_seed):
     test fold만 SHAP(pred_contribs) 계산. test fold SHAP을 모아 종 전체의
     Chem_Direction / TOC importance 산출.
 
-    반환: (success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean)
+    반환: (success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean,
+           n_unique_fold_splits)
     """
     success_count = 0
     oof_imp_chem_list = []
     oof_imp_toc_list = []
     oof_cor_chem_list = []
+    fold_split_signatures = set()
 
     for rep in range(N_OOF_REPEATS):
-        gkf = GroupKFold(n_splits=N_OOF_FOLDS)
+        # ★ shuffle + rep별 random_state로 서로 다른 분할 생성 (동일 분할 반복 방지)
+        gkf = GroupKFold(n_splits=N_OOF_FOLDS, shuffle=True,
+                         random_state=random_seed + rep)
         oof_shap_chem = np.full(len(X), np.nan)
         oof_shap_toc = np.full(len(X), np.nan)
         try:
             for train_idx, test_idx in gkf.split(X, y, groups):
+                # 이 반복의 분할 시그니처(각 fold의 test 인덱스 집합) 기록
+                fold_split_signatures.add(tuple(sorted(test_idx.tolist())))
                 X_tr, y_tr = X[train_idx], y[train_idx]
                 X_te = X[test_idx]
                 dtr = xgb.DMatrix(X_tr, label=y_tr,
@@ -390,8 +396,10 @@ def _oof_shap_for_species(X, y, groups, random_seed):
     oof_imp_chem_mean = float(np.mean(oof_imp_chem_list)) if oof_imp_chem_list else np.nan
     oof_imp_toc_mean = float(np.mean(oof_imp_toc_list)) if oof_imp_toc_list else np.nan
     oof_cor_chem_mean = float(np.mean(oof_cor_chem_list)) if oof_cor_chem_list else np.nan
+    n_unique_fold_splits = len(fold_split_signatures)
 
-    return success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean
+    return (success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean,
+            n_unique_fold_splits)
 
 
 def step2_species_selection(substance_dfs, source_name=""):
@@ -466,7 +474,7 @@ def step2_species_selection(substance_dfs, source_name=""):
                     "Status": "Excluded (OOF Infeasible: groups < folds)"})
                 continue
 
-            success_count, oof_imp_chem, oof_imp_toc, oof_cor_chem = \
+            success_count, oof_imp_chem, oof_imp_toc, oof_cor_chem, n_unique_splits = \
                 _oof_shap_for_species(X, y, groups, random_seed)
 
             oof_supported = success_count >= OOF_MIN_SUCCESS
@@ -489,6 +497,7 @@ def step2_species_selection(substance_dfs, source_name=""):
                 "Chem_Direction": cor_chem,
                 "OOF_Chem_Importance": oof_imp_chem, "OOF_TOC_Importance": oof_imp_toc,
                 "OOF_Chem_Direction": oof_cor_chem, "OOF_Success_Count": success_count,
+                "N_Unique_Fold_Splits": n_unique_splits,
                 "OOF_Supported": oof_supported, "Status": status})
 
     df_eval = pd.DataFrame(eval_list)
@@ -1203,9 +1212,12 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         n_valid_c80 = int(np.sum(n_c80_valid > 0))
         n_drc_inconsistent = int(drc_inconsistent.sum())
         # 제외·유지 EDS 농도 중앙값 (로그 스케일 → 원래 µg/kg dw 복원)
-        excluded_conc_log = conc_obs[uncertain_eds]
-        retained_conc_log = conc_obs[target_supported_eds]
+        # ★ 실제 제외 = primary_excluded, 후보 = drc_inconsistent (uncertain_eds)로 분리
+        excluded_conc_log = conc_obs[primary_excluded]      # 실제 제외자료
+        candidate_conc_log = conc_obs[uncertain_eds]        # 후보자료 (제외 여부 무관)
+        retained_conc_log = conc_obs[target_supported_eds]  # 유지 EDS
         excl_med_orig = float(np.median(10 ** excluded_conc_log - 1)) if len(excluded_conc_log) > 0 else np.nan
+        cand_med_orig = float(np.median(10 ** candidate_conc_log - 1)) if len(candidate_conc_log) > 0 else np.nan
         ret_med_orig = float(np.median(10 ** retained_conc_log - 1)) if len(retained_conc_log) > 0 else np.nan
 
         # ---- Primary 선별 DataFrame (Step 3 입력용) ----
@@ -1285,9 +1297,9 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         print(f"    대상물질 부호 안정(SHAP_target<0 ≥{stability_threshold:.0%}): {n_neg_majority} 시료 (보조 진단)")
         print(f"    Ablation: 금속 포함 시 OOF 예측 평균 변화 {mean_ablation:+.4f} "
               f"(음수 {n_ablation_negative} 시료)")
-        print(f"    C80 gate 검증: 제외 {n_drc_inconsistent}건 중 fold별 below_c80≥{min_success}회 {c80_below_count} / "
+        print(f"    C80 gate 검증: 후보 {n_drc_inconsistent}건 중 fold별 below_c80≥{min_success}회 {c80_below_count} / "
               f"미달 {c80_above_count} (유효 C80 {n_valid_c80}건) "
-              f"→ 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg (1% TOC 정규화)")
+              f"→ 실제 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg (1% TOC 정규화)")
 
         diag_rows.append({
             "Source": source_name, "Substance": substance, "N_total": n_total,
@@ -1325,6 +1337,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "N_valid_C80_assignments": n_valid_c80,
             "N_DRC_inconsistent": n_drc_inconsistent,
             "Excluded_EDS_Conc_Median_OC1pct": (round(excl_med_orig, 4) if not np.isnan(excl_med_orig) else None),
+            "Candidate_EDS_Conc_Median_OC1pct": (round(cand_med_orig, 4) if not np.isnan(cand_med_orig) else None),
             "Retained_EDS_Conc_Median_OC1pct": (round(ret_med_orig, 4) if not np.isnan(ret_med_orig) else None),
         })
 
