@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-고도화 파이프라인 v3: 신뢰도 기반 TEL/PEL 도출
+고도화 파이프라인 v4: 신뢰도 기반 TEL/PEL 도출
 =============================================
 
 [사용자 설계]
 1. TEL/PEL 신뢰도 향상
    - DRC 보이는 생물종 선정 → 독성 인과관계 확인
-   - 다른 독성기여도 높은 자료 → 기계학습(SHAP) 선별 → 제거 (Step 2.7)
+   - DRC-inconsistent toxicity(저농도·생존율<80·하위 OOF 잔차) 자료 → 제거 (Step 2.7)
 
 2. 준거치 신뢰도 판단
    - 기 설정 기준(CCME/NOAA)과 비교 검토 (Step 4-1)
@@ -16,9 +16,16 @@
   Step 1: DB 정제 (mPELQ 중금속 사전 필터)
   Step 2: XGBoost SHAP 종 선별 (Spearman ≤ -0.3)
   Step 2.5: DRC 품질 평가 → DRC OK 종만 선별
-  Step 2.7: 다물질 SHAP 타 독성 기여도 평가 → confounder-dominated 샘플 DROP ★
+  Step 2.7: nested OOF monotonic DRC + 저농도 C80 gate → DRC-inconsistent 기록 제외 ★
   Step 3: EDS/NEDS → TEL/PEL
   Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC 예측력) ★
+
+[Primary 필터 (Step 2.7) — 최종 확정]
+  - 반복 GroupKFold OOF로 대상물질 농도–생존율 monotonic DRC 학습 (금속 제외 2-feature)
+  - inner-OOF 잔차 분포의 하위 cutoff 분위수를 임계값으로, outer OOF 잔차가 그보다 낮으면 이상 판정
+  - 저농도 C80 gate: 관측생존<80 AND 관측농도<C80 AND 잔차<cutoff (fold별) — 10회 중 8회 이상
+  - SHAP(부호·dominance)은 보조 진단일 뿐, Primary 필터가 아님
+  - 안전장치: 제거율 > max_removal_rate(15%) 시 필터 미적용(chemistry screen only)
 """
 import warnings
 import sys
@@ -272,7 +279,7 @@ def step2_species_selection(substance_dfs, source_name=""):
                 imp_toc = np.mean(np.abs(pred[:, 1]))
                 cor_chem = stats.spearmanr(X[:, 0], pred[:, 0]).correlation
                 if np.isnan(cor_chem): cor_chem = 0.0
-                status = "Selected (Causal Indicator)"
+                status = "Selected (Concentration-response-supported)"
                 if cor_chem > -0.30: status = "Excluded (Non-toxic Trend)"
                 elif imp_toc > (imp_chem * 1.5): status = "Excluded (TOC Dominated)"
                 eval_list.append({"Substance": substance, "Species": sp,
@@ -538,20 +545,21 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                                      n_folds=None, n_seeds=None, stability_threshold=None,
                                      use_group_kfold=False):
     """
-    v4 confounder 필터 재설계 — OOF DRC 잔차 기반 이상자료 판정.
+    v4 Primary 필터 — nested OOF monotonic DRC + 저농도 C80 gate 기반 이상자료 판정.
 
     분석 구조:
-      - Primary:       OOF DRC 잔차 기반 필터 (survival<80 AND NOT stable DRC-inconsistent)
+      - Primary:       nested OOF DRC 잔차 기반 필터 (survival<80 AND NOT stable DRC-inconsistent)
       - Sensitivity 1: residual cutoff 2.5% (더 보수적)
       - Sensitivity 2: residual cutoff 10% (더 관대)
       - Sensitivity 3: chemistry screen only (ML 기록 필터 미적용)
       - Ablation:      금속 포함/제외 모델의 OOF prediction difference (보조 진단)
 
     반복 CV OOF DRC 잔차:
-      - 각 fold: training fold로 금속 제외 2-feature DRC 모델 적합 → held-out fold 예측
+      - 각 fold: training fold로 금속 제외 2-feature monotonic DRC 모델 적합 → held-out fold 예측
       - 잔차 = 실제 생존율 - DRC 예측 생존율
-      - training fold 잔차 분포의 하위 cutoff 분위수를 임계값으로,
+      - inner-OOF 잔차 분포의 하위 cutoff 분위수를 임계값으로,
         test(OOF) 잔차가 그 임계값보다 낮으면(더 음수) 이상 판정
+      - 저농도 C80 gate: 관측생존<80 AND 관측농도<C80 AND 잔차<cutoff (fold별)
       - 80% 안정성: 이상 판정이 n_seeds 중 min_success회 이상 반복되는 기록만 제외
       - 금속·TOC·SHAP은 이상 독성이 금속과 연관되는지 설명하는 보조 진단일 뿐
 
@@ -583,12 +591,12 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
     else:
         repeat_seeds = [int(s) for s in repeat_seeds]
     print(f"\n{'='*70}")
-    print(f"[Step 2.7-v4] confounder 필터 재설계 (진단) — {source_name}")
+    print(f"[Step 2.7-v4] nested OOF DRC + C80 gate (진단) — {source_name}")
     print(f"{'='*70}")
 
     diag_rows = []
     tel_pel_rows = []
-    primary_filtered_dfs = {}  # 합의형 Primary로 선별된 DataFrame (Step 3 입력)
+    primary_filtered_dfs = {}  # Primary로 선별된 DataFrame (Step 3 입력)
 
     for substance in TARGET_SUBSTANCES:
         if substance not in cleaned_dfs or substance not in drc_ok_species:
@@ -672,6 +680,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         n_c80_valid = np.zeros(n_total, dtype=int)         # 유효 C80 할당 횟수 (gate 적용 가능 fold)
         c80_sum = np.zeros(n_total, dtype=float)           # C80 누적 (record별 중앙 C80 산출용)
         n_blocked_high_conc = np.zeros(n_total, dtype=int) # 농도≥C80 으로 gate에 차단된 이상 후보 횟수
+        n_below_c80 = np.zeros(n_total, dtype=int)         # fold별 below_c80=True 횟수 (fold별 판정 검증용)
 
         # fold signature 저장: 각 seed의 fold 배정을 기록해 10개 반복의 분할 차이 검증
         fold_signatures = []  # [{seed, fold_id, test_record_ids}]
@@ -782,32 +791,17 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                                                   feature_names=[feature_names[0], feature_names[2]])
                             inner_pred[ite_idx] = m2_in.predict(dte2_in)
                     except Exception as e:
+                        # GroupKFold 실패 시 KFold로 대체하지 않는다.
+                        # (KFold 대체 시 동일 station이 train/test에 섞여 leakage 발생 가능)
+                        # → 해당 fold의 inner-OOF 잔차를 결측 처리하여 이상 판정에서 제외.
                         print(f"  {substance} seed={seed} fold={fold_id}: "
-                              f"inner GroupKFold 실패 ({e}) → KFold 대체")
-                        inner_kf = KFold(n_splits=min(n_folds, len(train_idx)),
-                                         shuffle=True, random_state=random_seed + seed)
-                        for itr_idx, ite_idx in inner_kf.split(X_tr2):
-                            dtr2_in = xgb.DMatrix(X_tr2[itr_idx], label=y_tr[itr_idx],
-                                                  feature_names=[feature_names[0], feature_names[2]])
-                            m2_in = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                                "max_depth": 4, "seed": random_seed,
-                                "monotone_constraints": "(-1,0)"}, dtr2_in, num_boost_round=100)
-                            dte2_in = xgb.DMatrix(X_tr2[ite_idx],
-                                                  feature_names=[feature_names[0], feature_names[2]])
-                            inner_pred[ite_idx] = m2_in.predict(dte2_in)
+                              f"inner GroupKFold 실패 ({e}) → 결측 처리 (KFold 대체 금지)")
+                        inner_pred = np.full(len(train_idx), np.nan, dtype=float)
                 else:
-                    # 그룹이 1개뿐이면 inner KFold로 대체
-                    inner_kf = KFold(n_splits=min(n_folds, len(train_idx)),
-                                     shuffle=True, random_state=random_seed + seed)
-                    for itr_idx, ite_idx in inner_kf.split(X_tr2):
-                        dtr2_in = xgb.DMatrix(X_tr2[itr_idx], label=y_tr[itr_idx],
-                                              feature_names=[feature_names[0], feature_names[2]])
-                        m2_in = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                            "max_depth": 4, "seed": random_seed,
-                            "monotone_constraints": "(-1,0)"}, dtr2_in, num_boost_round=100)
-                        dte2_in = xgb.DMatrix(X_tr2[ite_idx],
-                                              feature_names=[feature_names[0], feature_names[2]])
-                        inner_pred[ite_idx] = m2_in.predict(dte2_in)
+                    # 그룹이 1개뿐이면 inner GroupKFold 불가 → 결측 처리 (KFold 대체 금지)
+                    print(f"  {substance} seed={seed} fold={fold_id}: "
+                          f"inner 그룹 1개뿐 → 결측 처리 (KFold 대체 금지)")
+                    inner_pred = np.full(len(train_idx), np.nan, dtype=float)
 
                 resid_inner_oof = y_tr - inner_pred       # inner-OOF 잔차
                 # ---- 저농도 DRC gate (C80) ----
@@ -847,6 +841,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                     if c80 is not None:
                         n_c80_valid[idx] += 1
                         c80_sum[idx] += c80
+                        if conc_k < c80:
+                            n_below_c80[idx] += 1
 
                     for c in residual_cutoffs:
                         resid_cut = np.quantile(resid_inner_oof, c)
@@ -878,8 +874,24 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                     pred_with_metal[idx] += pred3[k]
                     pred_without_metal[idx] += pred2[k]
 
+                    # ---- C80 gate 원자료 (fold별 판정 검증용) ----
+                    # c80 = 해당 fold·TOC의 C80 (없으면 NaN)
+                    # below_c80 = 관측농도 < C80 여부 (fold별)
+                    # fold_inconsistent_{cutoff} = 해당 fold에서 이상 판정 여부 (cutoff별)
+                    toc_k = float(X_te2[k, 1])
+                    c80_k = c80_cache.get(toc_k)  # 첫 루프에서 채워짐
+                    conc_k = float(X_te2[k, 0])
+                    surv_k = float(y_te[k])
+                    below_c80_k = (c80_k is not None) and (conc_k < c80_k)
+                    fold_inconsistent_row = {}
+                    for c in residual_cutoffs:
+                        resid_cut = np.quantile(resid_inner_oof, c)
+                        fold_inconsistent_row[c] = int(
+                            (c80_k is not None) and (surv_k < 80) and (conc_k < c80_k)
+                            and (resid_te[k] < resid_cut))
+
                     # 시료별 원자료 (long format)
-                    raw_rows.append({
+                    row = {
                         "record_id": df_valid.loc[idx, "record_id"],
                         "sample_id": df_valid.loc[idx, "sample_id"],
                         "substance": substance,
@@ -900,7 +912,16 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                         "pred_with_metal": pred3[k],
                         "pred_without_metal": pred2[k],
                         "pred_diff": pred3[k] - pred2[k],
-                    })
+                        # C80 gate 원자료
+                        "c80": c80_k if c80_k is not None else np.nan,
+                        "c80_valid": int(c80_k is not None),
+                        "below_c80": int(below_c80_k),
+                        "pred_drc": pred2[k],
+                        "residual_oof": resid_te[k],
+                    }
+                    for c in residual_cutoffs:
+                        row[f"fold_inconsistent_{c}"] = fold_inconsistent_row[c]
+                    raw_rows.append(row)
 
         # ---- GroupKFold leakage 검사 (train/test 그룹 교집합 0이어야 정상) ----
         if use_group_kfold and group_overlap_count != 0:
@@ -967,14 +988,28 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         # DRC-inconsistent toxicity (제외 대상, Noise로 단정하지 않음)
         uncertain_eds = is_eds_raw & drc_inconsistent
 
-        # ---- 저농도 DRC gate (C80) 검증 ----
-        # 제외된 모든 기록이 fold-specific C80 아래 농도인지 확인.
+        # ---- 안전장치 + Primary 제외 마스크 (여기서 한 번만 정의) ----
+        # 제거율 = EDS 중 DRC-inconsistent로 제외된 비율
+        removal_rate = (uncertain_eds.sum() / (target_supported_eds.sum() + uncertain_eds.sum())) \
+            if (target_supported_eds.sum() + uncertain_eds.sum()) > 0 else 0.0
+        # 안전장치: 제거율이 max_removal_rate 초과 시 DRC 모델 부적합으로 판정
+        filter_applied = removal_rate <= max_removal_rate
+        # Primary 제외 마스크: 필터가 실제 적용된 경우에만 drc_inconsistent를 제외자료로 취급.
+        # filter_applied=False(안전장치 발동) 시에는 drc_inconsistent가 "후보"일 뿐
+        # 실제 제외자료가 아니므로, 최종 EDS 수·Data_Type·Fig.2 회색 ×는 반드시
+        # primary_excluded를 사용해야 한다. drc_inconsistent는 후보 수로 별도 저장.
+        primary_excluded = drc_inconsistent if filter_applied \
+            else np.zeros(n_total, dtype=bool)
+
+        # ---- 저농도 DRC gate (C80) 검증 (fold별 판정 직접 집계) ----
+        # 제외된 모든 기록이 fold별로 below_c80=True(관측농도 < fold-specific C80)였는지 확인.
+        # drc_inconsistent는 이미 각 fold에서 (surv<80 AND conc<C80 AND resid<cutoff)를
+        # 만족한 fold만 카운트하므로, 제외 기록은 n_below_c80 >= min_success여야 정상.
         # C80_above_count는 반드시 0이어야 정상 (고농도 강독성 자료가 노이즈로 빠지면 위반).
-        median_c80 = np.divide(c80_sum, n_c80_valid,
-                               out=np.full(n_total, np.nan), where=n_c80_valid > 0)
         conc_obs = df_valid[target_col].values  # 관측 농도 (로그 스케일, Conc_log)
-        c80_below_count = int(np.sum(drc_inconsistent & (n_c80_valid > 0) & (conc_obs < median_c80)))
-        c80_above_count = int(np.sum(drc_inconsistent & (n_c80_valid > 0) & (conc_obs >= median_c80)))
+        # fold별 below_c80 횟수가 min_success 미만인데 제외된 기록 = 게이트 위반 (반드시 0)
+        c80_above_count = int(np.sum(drc_inconsistent & (n_below_c80 < min_success)))
+        c80_below_count = int(np.sum(drc_inconsistent & (n_below_c80 >= min_success)))
         n_valid_c80 = int(np.sum(n_c80_valid > 0))
         n_drc_inconsistent = int(drc_inconsistent.sum())
         # 제외·유지 EDS 농도 중앙값 (로그 스케일 → 원래 µg/kg dw 복원)
@@ -984,9 +1019,10 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         ret_med_orig = float(np.median(10 ** retained_conc_log - 1)) if len(retained_conc_log) > 0 else np.nan
 
         # ---- Primary 선별 DataFrame (Step 3 입력용) ----
-        # Primary = NEDS 전체 + DRC-consistent EDS
-        # 안전장치: 제거율이 max_removal_rate 초과 시 DRC 모델 부적합 → chemistry screen only로 대체
-        primary_keep = is_neds | target_supported_eds
+        # Primary = NEDS 전체 + (EDS 중 primary_excluded가 아닌 것)
+        # primary_excluded는 filter_applied=False 시 전부 False이므로
+        # 자동으로 chemistry screen only(is_neds | is_eds_raw)로 복귀한다.
+        primary_keep = is_neds | (is_eds_raw & ~primary_excluded)
         primary_filtered_dfs[substance] = df_valid[primary_keep].copy()
 
         # ---- Sensitivity 구성 (residual cutoff 민감도) ----
@@ -997,8 +1033,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         sens2_eds = is_eds_raw & ~(residual_anomaly_counts[0.10] >= min_success)
         sens3_eds = is_eds_raw  # chemistry screen only
 
-        # ---- Primary TEL/PEL (DRC 잔차 기반 필터) ----
-        primary_df = df_valid[target_supported_eds | is_neds].reset_index(drop=True)
+        # ---- Primary TEL/PEL (DRC 잔차 기반 필터, primary_excluded 기준) ----
+        primary_df = df_valid[primary_keep].reset_index(drop=True)
         primary_telpel = _compute_tel_pel_from_df(primary_df, target_col)
         # Sens1/Sens2/Sens3 TEL/PEL
         sens1_df = df_valid[sens1_eds | is_neds].reset_index(drop=True)
@@ -1032,27 +1068,21 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         n_eds_uncertain = int(uncertain_eds.sum())
         n_neds = int(is_neds.sum())
         n_neg_majority = int((target_neg_freq_tree >= stability_threshold).sum())
-        # 제거율 (EDS 중 DRC-inconsistent로 제외된 비율)
-        removal_rate = (n_eds_uncertain / (n_eds_supported + n_eds_uncertain)) \
-            if (n_eds_supported + n_eds_uncertain) > 0 else 0.0
-        # 안전장치: 제거율이 max_removal_rate 초과 시 DRC 모델 부적합으로 판정
-        filter_applied = removal_rate <= max_removal_rate
-        # 안전장치 적용: 부적합 판정 시 Primary를 chemistry screen only로 대체
-        if not filter_applied:
-            primary_filtered_dfs[substance] = df_valid[is_neds | is_eds_raw].copy()
-            primary_telpel = _compute_tel_pel_from_df(
-                df_valid[is_neds | is_eds_raw].reset_index(drop=True), target_col)
-
+        # 실제 Primary EDS 수 (primary_excluded 기준 — filter_applied=False 시 chemistry screen only)
+        n_eds_primary = int((is_eds_raw & ~primary_excluded).sum())
+        n_excluded_primary = int(primary_excluded.sum())
+        # (removal_rate / filter_applied / primary_excluded는 위에서 이미 정의됨 — 중복 정의 제거)
         print(f"\n  {substance}: N={n_total}")
         print(f"    Primary (DRC 잔차 필터, cutoff={residual_cutoff:.0%}): "
-              f"EDS={n_eds_supported} NEDS={n_neds} "
-              f"제외(DRC-inconsistent)={n_eds_uncertain} "
+              f"EDS={n_eds_primary} NEDS={n_neds} "
+              f"제외(primary_excluded)={n_excluded_primary} "
               f"(제거율 {removal_rate:.1%}) → "
               f"TEL={primary_telpel['TEL']:.4f} PEL={primary_telpel['PEL']:.4f}" if primary_telpel else
               f"    Primary: TEL/PEL 계산 불가")
         if not filter_applied:
             print(f"    ⚠️ 제거율 {removal_rate:.1%} > {max_removal_rate:.0%} → "
-                  f"DRC 모델 부적합 판정, Primary 필터 미적용(chemistry screen only)")
+                  f"DRC 모델 부적합 판정, Primary 필터 미적용(chemistry screen only) "
+                  f"[drc_inconsistent 후보 {n_eds_uncertain}건은 제외하지 않음]")
         print(f"    Sens1 (cutoff 2.5%): EDS={int(sens1_eds.sum())} → "
               f"TEL={sens1_telpel['TEL']:.4f} PEL={sens1_telpel['PEL']:.4f}" if sens1_telpel else
               f"    Sens1: TEL/PEL 계산 불가")
@@ -1065,9 +1095,9 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         print(f"    대상물질 부호 안정(SHAP_target<0 ≥{stability_threshold:.0%}): {n_neg_majority} 시료 (보조 진단)")
         print(f"    Ablation: 금속 포함 시 OOF 예측 평균 변화 {mean_ablation:+.4f} "
               f"(음수 {n_ablation_negative} 시료)")
-        print(f"    C80 gate 검증: 제외 {n_drc_inconsistent}건 중 C80 미만 {c80_below_count} / "
-              f"C80 이상 {c80_above_count} (유효 C80 {n_valid_c80}건) "
-              f"→ 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg dw")
+        print(f"    C80 gate 검증: 제외 {n_drc_inconsistent}건 중 fold별 below_c80≥{min_success}회 {c80_below_count} / "
+              f"미달 {c80_above_count} (유효 C80 {n_valid_c80}건) "
+              f"→ 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg (1% TOC 정규화)")
 
         diag_rows.append({
             "Source": source_name, "Substance": substance, "N_total": n_total,
@@ -1078,6 +1108,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "N_target_neg_freq_ge_threshold": n_neg_majority,
             "N_EDS_supported": n_eds_supported,
             "N_EDS_uncertain": n_eds_uncertain,
+            "N_EDS_primary": n_eds_primary,
+            "N_excluded_primary": n_excluded_primary,
             "N_NEDS": n_neds,
             "residual_cutoff": residual_cutoff,
             "removal_rate": round(removal_rate, 4),
@@ -1102,8 +1134,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "C80_above_count": c80_above_count,
             "N_valid_C80_assignments": n_valid_c80,
             "N_DRC_inconsistent": n_drc_inconsistent,
-            "Excluded_EDS_Conc_Median_dw": (round(excl_med_orig, 4) if not np.isnan(excl_med_orig) else None),
-            "Retained_EDS_Conc_Median_dw": (round(ret_med_orig, 4) if not np.isnan(ret_med_orig) else None),
+            "Excluded_EDS_Conc_Median_OC1pct": (round(excl_med_orig, 4) if not np.isnan(excl_med_orig) else None),
+            "Retained_EDS_Conc_Median_OC1pct": (round(ret_med_orig, 4) if not np.isnan(ret_med_orig) else None),
         })
 
         for label, telpel in [("Primary", primary_telpel),
@@ -1125,18 +1157,23 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 OUTPUT_DIR / f"Step2_7v4_OOF_Raw_{source_name}_{substance}.csv",
                 index=False)
 
-        # Fig. 2 재설계용: OOF DRC 잔차 + drc_inconsistent flag 저장 (필터 전 전체 기록)
+        # Fig. 2 재설계용: OOF DRC 잔차 + primary_excluded flag 저장 (필터 전 전체 기록)
         # residual_mean = OOF 잔차 평균 (실제 생존율 - DRC 예측 생존율)
-        # drc_inconsistent = Primary cutoff 기준 안정적 이상 판정 (제외 대상)
+        # drc_inconsistent = Primary cutoff 기준 안정적 이상 판정 (제외 "후보")
+        # primary_excluded = 실제 제외자료 (filter_applied=True일 때만 drc_inconsistent와 동일,
+        #   filter_applied=False(안전장치 발동) 시에는 전부 False → 제외자료 없음)
         residual_mean = np.divide(residual_sum, n_assignments,
                                   out=np.full(n_total, np.nan), where=n_assignments > 0)
         drc_resid_df = df_valid.copy()
         drc_resid_df["residual_mean"] = residual_mean
         drc_resid_df["drc_inconsistent"] = drc_inconsistent.astype(int)
+        drc_resid_df["primary_excluded"] = primary_excluded.astype(int)
+        drc_resid_df["filter_applied"] = int(filter_applied)
         drc_resid_df["is_eds_raw"] = is_eds_raw.astype(int)
+        # Data_Type은 반드시 primary_excluded 기준 (실제 분석과 일치)
         drc_resid_df["Data_Type"] = np.where(
             is_neds, "NEDS",
-            np.where(drc_inconsistent, "DRC-inconsistent", "EDS"))
+            np.where(primary_excluded, "DRC-inconsistent", "EDS"))
         drc_resid_df.to_csv(
             OUTPUT_DIR / f"Step2_7v4_DRC_Residual_{source_name}_{substance}.csv",
             index=False)
@@ -1233,8 +1270,10 @@ def step3_tel_pel(filtered_dfs, drc_ok_species, source_name=""):
         n_v = df_pooled.loc[df_pooled["Data_Type"] == "NEDS", "Conc_log"].values
 
         if len(e_v) >= 2 and len(n_v) >= 2:
-            # Method B (CCME 지침): 원래 단위(µg/kg dw)에서 percentile 계산 후 기하평균.
-            # Conc_log = log10(원래농도 + 1) → 원래농도 = 10^Conc_log - 1
+            # Method B (CCME 지침): 원래 단위에서 percentile 계산 후 기하평균.
+            # Conc_log = log10(estimated_total/TOC_pct + 1) → 1% TOC 정규화 농도.
+            # 역변환 10^Conc_log - 1 = estimated_total/TOC_pct (µg/kg per 1% OC),
+            # 일반 µg/kg dw가 아님에 유의. CCME/NOAA 기준과 비교 시 단위 기준 일치 필요.
             e_orig = 10 ** e_v - 1
             n_orig = 10 ** n_v - 1
             our_tel = np.sqrt(np.quantile(e_orig, 0.15) * np.quantile(n_orig, 0.50))
@@ -1245,7 +1284,7 @@ def step3_tel_pel(filtered_dfs, drc_ok_species, source_name=""):
                 "Total_N": len(df_pooled), "N_EDS": n_eds, "N_NEDS": n_neds,
                 "N_DRC_OK_Species": len(ok_spp),
                 "DRC_OK_Species": "; ".join(ok_spp),
-                "Our_TEL_dw": round(our_tel, 4), "Our_PEL_dw": round(our_pel, 4),
+                "Our_TEL_OC1pct": round(our_tel, 4), "Our_PEL_OC1pct": round(our_pel, 4),
                 "CCME_ISQG": CCME_ISQG.get(substance, np.nan),
                 "CCME_PEL": CCME_PEL.get(substance, np.nan),
                 "NOAA_TEL": NOAA_TEL_DW.get(substance, np.nan),
@@ -1293,8 +1332,8 @@ def step4_reliability_assessment(final_df, edsneds_data, source_name=""):
             continue
 
         df_data = edsneds_data[substance]
-        our_tel = row["Our_TEL_dw"]
-        our_pel = row["Our_PEL_dw"]
+        our_tel = row["Our_TEL_OC1pct"]
+        our_pel = row["Our_PEL_OC1pct"]
 
         # --- 4-1. 기준 비교 ---
         ccme_isqg = row["CCME_ISQG"]
@@ -1414,14 +1453,14 @@ def main():
     group_cfg = cfg.get("group_kfold", {})
     group_kfold_mode = (
         "--group-kfold" in sys.argv
-        or group_cfg.get("enabled", False)
+        or group_cfg.get("enabled", True)  # 기본값 True: config가 없어도 GroupKFold 사용
     )
     print("=" * 70)
     print("고도화 파이프라인 v4: 신뢰도 기반 TEL/PEL 도출")
     print("  Step 1: DB 정제 (mPELQ 필터)")
     print("  Step 2: XGBoost SHAP 종 선별")
     print("  Step 2.5: DRC 평가 → DRC OK 종만 선별")
-    print("  Step 2.7: 다물질 SHAP confounder 필터링 (진단/Sensitivity)")
+    print("  Step 2.7: nested OOF monotonic DRC + C80 gate (진단/Sensitivity)")
     print("  Step 3: EDS/NEDS → TEL/PEL")
     print("  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC)")
     if diagnose_mode:
@@ -1462,8 +1501,8 @@ def main():
                 all_telpel.append(telpel_df)
             continue
 
-        # ★ v4 통합: Step 2.7 합의형 ML 필터 → Step 3 empirical TEL/PEL
-        #   Primary = NEDS 전체 + Tree·Interventional 합의 target-supported EDS
+        # ★ v4 통합: Step 2.7 nested OOF DRC + C80 gate → Step 3 empirical TEL/PEL
+        #   Primary = NEDS 전체 + (EDS 중 primary_excluded가 아닌 것)
         primary_filtered_dfs, diag_df, telpel_df = step2_7_confounder_filtering_v4(
             cleaned_dfs, drc_ok_species, source_name,
             use_group_kfold=group_kfold_mode)
@@ -1517,13 +1556,13 @@ def main():
         comparison.to_csv(OUTPUT_DIR / "TEL_PEL_v4_comparison.csv", index=False)
 
         print("\n--- TEL 비교 ---")
-        tel_pivot = comparison.pivot(index="Substance", columns="Source", values="Our_TEL_dw")
+        tel_pivot = comparison.pivot(index="Substance", columns="Source", values="Our_TEL_OC1pct")
         tel_pivot["CCME_ISQG"] = comparison.groupby("Substance")["CCME_ISQG"].first()
         tel_pivot["NOAA_TEL"] = comparison.groupby("Substance")["NOAA_TEL"].first()
         print(tel_pivot.to_string(float_format="%.2f"))
 
         print("\n--- PEL 비교 ---")
-        pel_pivot = comparison.pivot(index="Substance", columns="Source", values="Our_PEL_dw")
+        pel_pivot = comparison.pivot(index="Substance", columns="Source", values="Our_PEL_OC1pct")
         pel_pivot["CCME_PEL"] = comparison.groupby("Substance")["CCME_PEL"].first()
         pel_pivot["NOAA_PEL"] = comparison.groupby("Substance")["NOAA_PEL"].first()
         print(pel_pivot.to_string(float_format="%.2f"))
