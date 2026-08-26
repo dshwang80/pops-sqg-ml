@@ -237,11 +237,99 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
 
 
 # =============================================================================
-# Step 2: XGBoost SHAP 종 선별
+# Step 2: XGBoost OOF SHAP 종 선별
 # =============================================================================
+# OOF 종 선별 파라미터 (사용자 확정 2026-08-26)
+#   - 종별 5-fold × 10회 GroupKFold OOF SHAP 계산
+#   - test fold만 SHAP 계산, KFold 대체 금지
+#   - 반복별 조건: Chem_Direction ≤ −0.30 AND TOC importance ≤ 1.5 × chemical importance
+#   - 10회 중 8회 이상 충족 시 OOF-supported species
+#   - in-sample SHAP은 비교용으로만 유지, 최종 선별은 OOF 기준
+N_OOF_REPEATS = 10
+N_OOF_FOLDS = 5
+OOF_MIN_SUCCESS = 8
+CHEM_DIRECTION_THRESHOLD = -0.30
+TOC_IMPORTANCE_RATIO = 1.5
+
+
+def _get_group_col(df):
+    """GroupKFold용 그룹 컬럼 결정 (station/sample cluster 우선순위)."""
+    for cand in ["station_key", "Station", "sample_key", "SampleID"]:
+        if cand in df.columns and df[cand].notna().sum() > 1:
+            return cand
+    return "record_id"
+
+
+def _oof_shap_for_species(X, y, groups, random_seed):
+    """
+    종별 5-fold × N_OOF_REPEATS회 GroupKFold OOF SHAP 계산.
+
+    각 반복에서 GroupKFold로 분할(KFold 대체 금지), train fold로 학습 후
+    test fold만 SHAP(pred_contribs) 계산. test fold SHAP을 모아 종 전체의
+    Chem_Direction / TOC importance 산출.
+
+    반환: (success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean)
+    """
+    success_count = 0
+    oof_imp_chem_list = []
+    oof_imp_toc_list = []
+    oof_cor_chem_list = []
+
+    for rep in range(N_OOF_REPEATS):
+        gkf = GroupKFold(n_splits=N_OOF_FOLDS)
+        oof_shap_chem = np.full(len(X), np.nan)
+        oof_shap_toc = np.full(len(X), np.nan)
+        try:
+            for train_idx, test_idx in gkf.split(X, y, groups):
+                X_tr, y_tr = X[train_idx], y[train_idx]
+                X_te = X[test_idx]
+                dtr = xgb.DMatrix(X_tr, label=y_tr,
+                                  feature_names=["Conc_log", "TOC_pct"])
+                dte = xgb.DMatrix(X_te, feature_names=["Conc_log", "TOC_pct"])
+                m = xgb.train(
+                    {"objective": "reg:squarederror", "eta": 0.1,
+                     "max_depth": 3, "seed": random_seed + rep},
+                    dtr, num_boost_round=100,
+                )
+                contrib = m.predict(dte, pred_contribs=True)
+                oof_shap_chem[test_idx] = contrib[:, 0]
+                oof_shap_toc[test_idx] = contrib[:, 1]
+        except Exception:
+            # GroupKFold 실패 시 KFold 대체 금지 → 이 반복은 실패 처리
+            continue
+
+        valid = ~np.isnan(oof_shap_chem)
+        if valid.sum() == 0:
+            continue
+
+        oof_imp_chem = np.mean(np.abs(oof_shap_chem[valid]))
+        oof_imp_toc = np.mean(np.abs(oof_shap_toc[valid]))
+        oof_cor_chem = stats.spearmanr(X[valid, 0], oof_shap_chem[valid]).correlation
+        if np.isnan(oof_cor_chem):
+            oof_cor_chem = 0.0
+
+        oof_imp_chem_list.append(oof_imp_chem)
+        oof_imp_toc_list.append(oof_imp_toc)
+        oof_cor_chem_list.append(oof_cor_chem)
+
+        # 반복별 조건 적용 (기존 조건과 동일)
+        cond_direction = oof_cor_chem <= CHEM_DIRECTION_THRESHOLD
+        cond_toc = oof_imp_toc <= (oof_imp_chem * TOC_IMPORTANCE_RATIO)
+        if cond_direction and cond_toc:
+            success_count += 1
+
+    oof_imp_chem_mean = float(np.mean(oof_imp_chem_list)) if oof_imp_chem_list else np.nan
+    oof_imp_toc_mean = float(np.mean(oof_imp_toc_list)) if oof_imp_toc_list else np.nan
+    oof_cor_chem_mean = float(np.mean(oof_cor_chem_list)) if oof_cor_chem_list else np.nan
+
+    return success_count, oof_imp_chem_mean, oof_imp_toc_mean, oof_cor_chem_mean
+
+
 def step2_species_selection(substance_dfs, source_name=""):
     print(f"\n{'='*70}")
-    print(f"[Step 2] XGBoost SHAP 종 선별 — {source_name}")
+    print(f"[Step 2] XGBoost OOF SHAP 종 선별 — {source_name}")
+    print(f"  (종별 5-fold × {N_OOF_REPEATS}회 GroupKFold OOF SHAP, "
+          f"{OOF_MIN_SUCCESS}/{N_OOF_REPEATS}회 충족 시 OOF-supported)")
     print(f"{'='*70}")
 
     cfg = load_config()
@@ -260,7 +348,10 @@ def step2_species_selection(substance_dfs, source_name=""):
                 eval_list.append({"Substance": substance, "Species": sp,
                     "Total_N": total_n, "Toxic_N": toxic_n,
                     "Chem_Importance": np.nan, "TOC_Importance": np.nan,
-                    "Chem_Direction": np.nan, "Status": "Excluded (Insufficient)"})
+                    "Chem_Direction": np.nan,
+                    "OOF_Chem_Importance": np.nan, "OOF_TOC_Importance": np.nan,
+                    "OOF_Chem_Direction": np.nan, "OOF_Success_Count": 0,
+                    "OOF_Supported": False, "Status": "Excluded (Insufficient)"})
                 continue
             X = df_sp[["Conc_log", "TOC_pct"]].values.astype(np.float64)
             y = df_sp["Mean_Survival"].values.astype(np.float64)
@@ -268,8 +359,13 @@ def step2_species_selection(substance_dfs, source_name=""):
                 eval_list.append({"Substance": substance, "Species": sp,
                     "Total_N": total_n, "Toxic_N": toxic_n,
                     "Chem_Importance": np.nan, "TOC_Importance": np.nan,
-                    "Chem_Direction": np.nan, "Status": "Excluded (Data Quality)"})
+                    "Chem_Direction": np.nan,
+                    "OOF_Chem_Importance": np.nan, "OOF_TOC_Importance": np.nan,
+                    "OOF_Chem_Direction": np.nan, "OOF_Success_Count": 0,
+                    "OOF_Supported": False, "Status": "Excluded (Data Quality)"})
                 continue
+
+            # ---- in-sample SHAP (비교용) ----
             try:
                 dtrain = xgb.DMatrix(X, label=y, feature_names=["Conc_log", "TOC_pct"])
                 model = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
@@ -279,22 +375,65 @@ def step2_species_selection(substance_dfs, source_name=""):
                 imp_toc = np.mean(np.abs(pred[:, 1]))
                 cor_chem = stats.spearmanr(X[:, 0], pred[:, 0]).correlation
                 if np.isnan(cor_chem): cor_chem = 0.0
-                status = "Selected (Concentration-response-supported)"
-                if cor_chem > -0.30: status = "Excluded (Non-toxic Trend)"
-                elif imp_toc > (imp_chem * 1.5): status = "Excluded (TOC Dominated)"
+            except Exception:
+                imp_chem = imp_toc = cor_chem = np.nan
+
+            # ---- OOF SHAP (5-fold × 10회 GroupKFold) ----
+            group_col = _get_group_col(df_sp)
+            # ★ NaN 처리: astype(str) 후에도 ArrowStringArray의 NaN은 실제 float NaN으로
+            # 남아 문자열 비교("nan")로 잡히지 않는다. isna() 기반으로 정확히 검출해야
+            # 한다. NaN station은 record-level(각각 고유 그룹)로 처리해 leakage 방지.
+            groups = df_sp[group_col].astype(str).values
+            rec_ids = df_sp["record_id"].astype(str).values if "record_id" in df_sp.columns else None
+            is_missing = df_sp[group_col].isna().values
+            if rec_ids is not None:
+                groups = np.where(is_missing, rec_ids, groups).astype(str)
+            else:
+                groups = np.where(is_missing,
+                                 [f"__MISSING_{i}" for i in range(len(groups))],
+                                 groups).astype(str)
+            n_groups = len(np.unique(groups))
+
+            if n_groups < N_OOF_FOLDS:
+                # GroupKFold 불가 → OOF 결측 처리 (KFold 대체 금지)
                 eval_list.append({"Substance": substance, "Species": sp,
                     "Total_N": total_n, "Toxic_N": toxic_n,
                     "Chem_Importance": imp_chem, "TOC_Importance": imp_toc,
-                    "Chem_Direction": cor_chem, "Status": status})
-            except Exception as e:
-                eval_list.append({"Substance": substance, "Species": sp,
-                    "Total_N": total_n, "Toxic_N": toxic_n,
-                    "Chem_Importance": np.nan, "TOC_Importance": np.nan,
-                    "Chem_Direction": np.nan, "Status": f"Excluded (Error)"})
+                    "Chem_Direction": cor_chem,
+                    "OOF_Chem_Importance": np.nan, "OOF_TOC_Importance": np.nan,
+                    "OOF_Chem_Direction": np.nan, "OOF_Success_Count": 0,
+                    "OOF_Supported": False,
+                    "Status": "Excluded (OOF Infeasible: groups < folds)"})
+                continue
+
+            success_count, oof_imp_chem, oof_imp_toc, oof_cor_chem = \
+                _oof_shap_for_species(X, y, groups, random_seed)
+
+            oof_supported = success_count >= OOF_MIN_SUCCESS
+
+            # 최종 Status는 OOF 기준으로 결정
+            if oof_supported:
+                status = "Selected (Concentration-response-supported)"
+            elif np.isnan(oof_cor_chem):
+                status = "Excluded (OOF Infeasible)"
+            elif oof_cor_chem > CHEM_DIRECTION_THRESHOLD:
+                status = "Excluded (Non-toxic Trend)"
+            elif oof_imp_toc > (oof_imp_chem * TOC_IMPORTANCE_RATIO):
+                status = "Excluded (TOC Dominated)"
+            else:
+                status = "Excluded (OOF Unstable)"
+
+            eval_list.append({"Substance": substance, "Species": sp,
+                "Total_N": total_n, "Toxic_N": toxic_n,
+                "Chem_Importance": imp_chem, "TOC_Importance": imp_toc,
+                "Chem_Direction": cor_chem,
+                "OOF_Chem_Importance": oof_imp_chem, "OOF_TOC_Importance": oof_imp_toc,
+                "OOF_Chem_Direction": oof_cor_chem, "OOF_Success_Count": success_count,
+                "OOF_Supported": oof_supported, "Status": status})
 
     df_eval = pd.DataFrame(eval_list)
     selected = df_eval[df_eval["Status"].str.contains("Selected", na=False)]
-    print(f"선택된 종: {len(selected)}종")
+    print(f"선택된 종 (OOF-supported): {len(selected)}종")
     df_eval.to_csv(OUTPUT_DIR / f"Step2_Species_Eval_{source_name}.csv", index=False)
     return df_eval
 
