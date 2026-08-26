@@ -34,14 +34,26 @@ SOURCES = [
 
 
 def run_pipeline_for_cutoff(source_name, db_path, cutoff):
-    """특정 mPELQ cutoff로 전체 파이프라인 실행 → TEL/PEL 결과 DataFrame 반환."""
-    df_raw = pd.read_csv(db_path, low_memory=False)
-    df_base, substance_dfs = rp.step1_db_curation(df_raw, source_name,
-                                                  mpelq_threshold=cutoff)
-    df_eval = rp.step2_species_selection(substance_dfs, source_name)
-    cleaned_dfs, drc_df, drc_ok_species = rp.step2_5_drc_evaluation(
-        substance_dfs, df_eval, source_name)
-    final, edsneds_data = rp.step3_tel_pel(cleaned_dfs, drc_ok_species, source_name)
+    """특정 mPELQ cutoff로 전체 파이프라인 실행 → TEL/PEL 결과 DataFrame 반환.
+
+    ★ 출력 경로 분리: rp.OUTPUT_DIR을 cutoff별 하위 디렉토리로 임시 전환하여
+      Primary(root output)의 Step2/Step2_5/Step3 산출물을 덮어쓰지 않는다.
+    """
+    # cutoff별 출력 디렉토리 분리 (root output 덮어쓰기 방지)
+    cutoff_dir = OUTPUT_DIR / "mpelq_sensitivity" / f"cutoff_{cutoff}"
+    cutoff_dir.mkdir(parents=True, exist_ok=True)
+    original_out = rp.OUTPUT_DIR
+    rp.OUTPUT_DIR = cutoff_dir
+    try:
+        df_raw = pd.read_csv(db_path, low_memory=False)
+        df_base, substance_dfs = rp.step1_db_curation(df_raw, source_name,
+                                                      mpelq_threshold=cutoff)
+        df_eval = rp.step2_species_selection(substance_dfs, source_name)
+        cleaned_dfs, drc_df, drc_ok_species = rp.step2_5_drc_evaluation(
+            substance_dfs, df_eval, source_name)
+        final, edsneds_data = rp.step3_tel_pel(cleaned_dfs, drc_ok_species, source_name)
+    finally:
+        rp.OUTPUT_DIR = original_out
     return final
 
 

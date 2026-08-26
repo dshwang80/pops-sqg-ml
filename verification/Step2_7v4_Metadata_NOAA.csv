@@ -1,0 +1,4 @@
+Source,Substance,N_total,n_splits,n_repeats,n_oof_per_sample_min,n_oof_per_sample_max,stability_threshold,dominance_ratio,interventional_background_min,interventional_background_max,interventional_background_sampling
+NOAA,DDTs,4387,5,10,10,10,0.8,1.0,3440,3563,full_training_fold
+NOAA,CHLs,3150,5,10,10,10,0.8,1.0,2513,2529,full_training_fold
+NOAA,PCBs,3877,5,10,10,10,0.8,1.0,3069,3127,full_training_fold

@@ -1,0 +1,4 @@
+Source,Substance,N_total,n_splits,n_repeats,n_oof_per_sample_min,n_oof_per_sample_max,stability_threshold,dominance_ratio,interventional_background_min,interventional_background_max,interventional_background_sampling
+Integrated,DDTs,4636,5,10,10,10,0.8,1.0,453,4529,full_training_fold
+Integrated,CHLs,3523,5,10,10,10,0.8,1.0,278,3458,full_training_fold
+Integrated,PCBs,4275,5,10,10,10,0.8,1.0,379,4186,full_training_fold

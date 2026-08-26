@@ -6,7 +6,6 @@
 [사용자 설계]
 1. TEL/PEL 신뢰도 향상
    - DRC 보이는 생물종 선정 → 독성 인과관계 확인
-   - EqP보다 낮은 독성값 → 신뢰도 낮음 → 제거 (Step 1 EqP 필터)
    - 다른 독성기여도 높은 자료 → 기계학습(SHAP) 선별 → 제거 (Step 2.7)
 
 2. 준거치 신뢰도 판단
@@ -14,15 +13,16 @@
    - 독성 예측력(ROC-AUC) 검토 (Step 4-2)
 
 파이프라인 구조:
-  Step 1: DB 정제 (EqP 필터 + mPELQ 중금속 사전 필터)
+  Step 1: DB 정제 (mPELQ 중금속 사전 필터)
   Step 2: XGBoost SHAP 종 선별 (Spearman ≤ -0.3)
-  Step 2.5: DRC 품질 평가 → DRC OK 종만 선별 + 가짜 독성 DROP
+  Step 2.5: DRC 품질 평가 → DRC OK 종만 선별
   Step 2.7: 다물질 SHAP 타 독성 기여도 평가 → confounder-dominated 샘플 DROP ★
-  Step 3: SHAP EDS/NEDS → TEL/PEL
+  Step 3: EDS/NEDS → TEL/PEL
   Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC 예측력) ★
 """
 import warnings
 import sys
+import math
 import numpy as np
 import pandas as pd
 import xgboost as xgb
@@ -91,14 +91,6 @@ def load_config():
             return json.load(f)
     return {}
 
-eqp_params = {
-    'DDTs':     {'log_kow': 6.91, 'ccc_ugL': 0.001},
-    'CHLs':     {'log_kow': 6.00, 'ccc_ugL': 0.004},
-    'PCBs':     {'log_kow': 6.80, 'ccc_ugL': 0.03},
-    'Dieldrin': {'log_kow': 5.37, 'ccc_ugL': 0.1469},
-    'PAHs':     {'log_kow': 5.20, 'ccc_ugL': 2.322},
-}
-
 # mPELQ threshold: 평균 중금속이 PEL의 50% 초과 → 타 독성 기여도 의심
 MPELQ_METALS_THRESHOLD = 0.5
 
@@ -109,9 +101,10 @@ UNIT_FACTOR = {
 
 
 # =============================================================================
-# Step 1: DB 정제 (EqP 필터 + mPELQ 중금속 사전 필터)
+# Step 1: DB 정제 (mPELQ 중금속 사전 필터)
 # =============================================================================
 def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
+    cfg = load_config()
     print(f"\n{'='*70}")
     print(f"[Step 1] DB 정제 — {source_name}")
     print(f"{'='*70}")
@@ -142,6 +135,8 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
             df_pre[m] = np.nan
     metal_df = df_pre[METAL_COLS].copy()
     quotients = pd.DataFrame({m: metal_df[m] / PEL_METALS[m] for m in METAL_COLS})
+    # 측정된 금속 수 기록 (미측정 금속을 0으로 위장하지 않음)
+    df_pre["N_metals_measured"] = metal_df.notna().sum(axis=1)
     df_pre["mPELQ_Metals"] = quotients.mean(axis=1)
 
     # 이성질체 가중 합산
@@ -202,7 +197,7 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
         n_valid = df_base[f"Sum_{substance}_OC_log"].notna().sum()
         print(f"  {substance}: 유효 {n_valid:,}지점")
 
-    # EqP 필터 + mPELQ 사전 필터
+    # mPELQ 사전 필터
     substance_dfs = {}
     for substance in TARGET_SUBSTANCES:
         target_col = f"Sum_{substance}_OC_log"
@@ -215,9 +210,16 @@ def step1_db_curation(df_raw, source_name="", mpelq_threshold=None):
         if mpelq_threshold is not None:
             mpelq_thresh = mpelq_threshold
         else:
-            mpelq_thresh = MPELQ_METALS_THRESHOLD
+            mpelq_thresh = float(
+                cfg.get("mpelq_metals_threshold", MPELQ_METALS_THRESHOLD)
+            )
         n_before_mpelq = len(df_sub)
-        df_sub = df_sub[df_sub["mPELQ_Metals"] <= mpelq_thresh].copy()
+        # 최소 측정 금속 수 기준: 측정 금속이 min_metals_measured 미만이면 mPELQ 신뢰 불가 → 제거
+        min_metals = int(cfg.get("min_metals_measured", 3))
+        df_sub = df_sub[
+            (df_sub["N_metals_measured"] >= min_metals) &
+            (df_sub["mPELQ_Metals"] <= mpelq_thresh)
+        ].copy()
         n_after_mpelq = len(df_sub)
         n_mpelq_removed = n_before_mpelq - n_after_mpelq
         print(f"  {substance}: mPELQ 제거 {n_mpelq_removed} → 최종 {len(df_sub):,}지점")
@@ -234,6 +236,9 @@ def step2_species_selection(substance_dfs, source_name=""):
     print(f"\n{'='*70}")
     print(f"[Step 2] XGBoost SHAP 종 선별 — {source_name}")
     print(f"{'='*70}")
+
+    cfg = load_config()
+    random_seed = int(cfg.get("random_seed", RANDOM_SEED))
 
     eval_list = []
     for substance in TARGET_SUBSTANCES:
@@ -261,7 +266,7 @@ def step2_species_selection(substance_dfs, source_name=""):
             try:
                 dtrain = xgb.DMatrix(X, label=y, feature_names=["Conc_log", "TOC_pct"])
                 model = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                    "max_depth": 3, "seed": RANDOM_SEED}, dtrain, num_boost_round=100)
+                    "max_depth": 3, "seed": random_seed}, dtrain, num_boost_round=100)
                 pred = model.predict(dtrain, pred_contribs=True)
                 imp_chem = np.mean(np.abs(pred[:, 0]))
                 imp_toc = np.mean(np.abs(pred[:, 1]))
@@ -288,7 +293,7 @@ def step2_species_selection(substance_dfs, source_name=""):
 
 
 # =============================================================================
-# Step 2.5: DRC 품질 평가 → DRC OK 종만 선별 + 가짜 독성 DROP ★개편
+# Step 2.5: DRC 품질 평가 → DRC OK 종만 선별
 # =============================================================================
 def evaluate_drc_quality(conc_log, survival):
     """
@@ -298,7 +303,7 @@ def evaluate_drc_quality(conc_log, survival):
     대신 독성 인과관계 방향(slope < 0)과 저농도 가짜 독성 비율로 판정
 
     Tier 1 (DRC OK):    slope < 0 AND 저농도 독성비율 ≤ 0.50 → 그대로 사용
-    Tier 2 (DRC Marginal): slope < 0 AND 저농도 독성비율 > 0.50 → 가짜 독성 DROP 후 사용
+    Tier 2 (DRC Marginal): slope < 0 AND 저농도 독성비율 > 0.50 → 사용 (가짜 독성 DROP 없음)
     Tier 3 (DRC Poor):  slope ≥ 0 → 통째로 제외
     """
     result = {
@@ -333,9 +338,9 @@ def evaluate_drc_quality(conc_log, survival):
         result["Reason"] = f"slope={slope:.3f} ≥ 0 (no dose-response)"
     elif low_tox_ratio > 0.50:
         result["DRC_Tier"] = "Tier2_Marginal"
-        result["DRC_OK"] = True  # 가짜 독성 DROP 후 사용
-        result["N_Low_Tox_Drop"] = n_low_tox
-        result["Reason"] = f"slope OK but lowTox={low_tox_ratio:.2f} > 0.50 → DROP fake toxicity"
+        result["DRC_OK"] = True  # 가짜 독성 DROP 없이 사용
+        result["N_Low_Tox_Drop"] = 0
+        result["Reason"] = f"slope OK but lowTox={low_tox_ratio:.2f} > 0.50 (kept, no fake-toxicity drop)"
     else:
         result["DRC_Tier"] = "Tier1_OK"
         result["DRC_OK"] = True
@@ -344,13 +349,17 @@ def evaluate_drc_quality(conc_log, survival):
     return result
 
 
-def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
+def step2_5_drc_evaluation(substance_dfs, df_eval, source_name="",
+                           anchor_species=None):
     """
-    DRC 품질 평가 → DRC OK 종만 선별 + 가짜 독성 DROP
+    DRC 품질 평가 → DRC OK 종만 선별
 
     ★ 핵심 변경:
     - DRC 불량 종 → 통째로 제외 (TEL/PEL에 사용하지 않음)
-    - DRC OK 종의 저농도 가짜 독성 → DROP (생존 80% 상향 아님)
+    - DRC OK 종의 저농도 가짜 독성 → DROP 없음 (Primary는 survival 기준 EDS 전부 포함)
+
+    anchor_species: dict {substance: [species, ...]} — Sensitivity 분석에서만
+    표준 시험종을 anchor로 강제 추가할 때 사용. Primary에서는 None (강제 추가 없음).
     """
     print(f"\n{'='*70}")
     print(f"[Step 2.5] DRC 품질 평가 → DRC OK 종만 선별 — {source_name}")
@@ -364,12 +373,15 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
         spp = sel["Species"].unique().tolist()
         if spp:
             selected_species_dict[sub] = spp
-    # Leptocheirus plumulosus 하드코딩 추가
-    for sub in ["DDTs", "Dieldrin", "PCBs"]:
-        if sub in selected_species_dict:
-            selected_species_dict[sub] = list(set(selected_species_dict[sub] + ["Leptocheirus plumulosus"]))
-        else:
-            selected_species_dict[sub] = ["Leptocheirus plumulosus"]
+
+    # Sensitivity 전용: anchor species 강제 추가 (Primary에서는 실행 안 됨)
+    if anchor_species:
+        for sub, anchor_spp in anchor_species.items():
+            if sub in selected_species_dict:
+                selected_species_dict[sub] = list(
+                    set(selected_species_dict[sub] + anchor_spp))
+            else:
+                selected_species_dict[sub] = list(anchor_spp)
 
     drc_results = []
     drc_ok_species = {}  # DRC OK 종만 저장
@@ -381,6 +393,9 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
         accepted = selected_species_dict.get(substance)
         if not accepted:
             continue
+
+        # anchor species 집합 (Sensitivity 전용): DRC 불량이어도 포함
+        anchor_set = set(anchor_species.get(substance, [])) if anchor_species else set()
 
         target_col = f"Sum_{substance}_OC_log"
         df_sub = substance_dfs[substance]
@@ -426,6 +441,10 @@ def step2_5_drc_evaluation(substance_dfs, df_eval, source_name=""):
                 #   저농도 가짜 독성 제거는 순환성·선택편향 우려 → 민감도 분석으로 이동.
                 #   N_Low_Tox_Drop은 진단 정보로만 기록(삭제하지 않음).
             # DRC 불량 종: 해당 종 데이터 전체 DROP
+            #   단, anchor species(Sensitivity 전용)는 DRC 불량이어도 유지
+            elif sp in anchor_set:
+                ok_species_for_substance.append(sp)
+                print(f"  ⚓ {sp[:35]:35s} | anchor species — DRC 불량이지만 유지 (Sensitivity)")
             else:
                 df_pooled = df_pooled[~sp_mask].copy()
 
@@ -551,6 +570,12 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         stability_threshold = float(cfg.get("stability_threshold", 0.80))
     dominance_ratio = float(cfg.get("dominance_ratio", 1.0))
     random_seed = int(cfg.get("random_seed", 42))
+    # repeat_seeds 목록을 config에서 읽음 (없으면 range(n_seeds)로 대체)
+    repeat_seeds = cfg.get("repeat_seeds", None)
+    if repeat_seeds is None or len(repeat_seeds) != n_seeds:
+        repeat_seeds = list(range(n_seeds))
+    else:
+        repeat_seeds = [int(s) for s in repeat_seeds]
     print(f"\n{'='*70}")
     print(f"[Step 2.7-v4] confounder 필터 재설계 (진단) — {source_name}")
     print(f"{'='*70}")
@@ -606,7 +631,11 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 break
         if group_col is None:
             group_col = "record_id"  # station 식별 불가 → record-level (군집 없음)
-        groups = df_valid[group_col].fillna("NA").astype(str).values
+        # 결측 group은 "NA"로 묶지 않고 각 행의 record_id로 대체 (군집 오염 방지)
+        groups = df_valid[group_col].astype(str).values
+        rec_ids = df_valid["record_id"].astype(str).values
+        is_missing = (groups == "nan") | (groups == "None") | (groups == "")
+        groups = np.where(is_missing, rec_ids, groups).astype(str)
 
         feature_names = [f"{substance}_conc", "mPELQ_Metals", "TOC_pct"]
 
@@ -626,6 +655,9 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         pred_with_metal = np.zeros(n_total, dtype=float)
         pred_without_metal = np.zeros(n_total, dtype=float)
 
+        # fold signature 저장: 각 seed의 fold 배정을 기록해 10개 반복의 분할 차이 검증
+        fold_signatures = []  # [{seed, fold_id, test_record_ids}]
+
         # 시료별 OOF 원자료 수집 (long format)
         raw_rows = []
         bg_sizes = []  # fold별 interventional background 실제 행 수
@@ -633,22 +665,18 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         n_inter_attempts = 0  # Interventional SHAP 시도 fold 수
         n_inter_success = 0   # Interventional SHAP 성공 fold 수
 
-        for seed in range(n_seeds):
+        for seed in repeat_seeds:
             if use_group_kfold:
                 # GroupKFold: 동일 station/sample cluster가 train/test에 중복되지 않도록 분할.
-                # GroupKFold는 seed를 받지 않으므로, 각 seed마다 그룹 순서를 shuffle하여
-                # 서로 다른 분할을 생성한다(repeated group split).
-                rng = np.random.RandomState(random_seed + seed)
-                uniq_groups = np.unique(groups)
-                perm = rng.permutation(len(uniq_groups))
-                group_order = {g: i for i, g in enumerate(uniq_groups[perm])}
-                order = np.argsort([group_order[g] for g in groups])
-                X_shuf = X_valid[order]
-                groups_shuf = groups[order]
-                gkf = GroupKFold(n_splits=n_folds)
-                splits = list(gkf.split(X_shuf, groups=groups_shuf))
-                # splits 인덱스는 order 기준 → 원래 인덱스로 매핑
-                splits = [(order[tr], order[te]) for tr, te in splits]
+                # sklearn 1.9.0의 GroupKFold는 shuffle=True + random_state를 지원하므로,
+                # 각 seed마다 서로 다른 분할을 생성한다(repeated group split).
+                if len(np.unique(groups)) < n_folds:
+                    raise ValueError(
+                        f"Number of unique groups ({len(np.unique(groups))}) "
+                        f"is smaller than n_folds ({n_folds})")
+                gkf = GroupKFold(n_splits=n_folds, shuffle=True,
+                                 random_state=random_seed + seed)
+                splits = list(gkf.split(X_valid, groups=groups))
                 # 교집합 검사: 각 fold에서 train/test 그룹이 겹치면 카운트
                 for train_idx, test_idx in splits:
                     tr_g = set(groups[train_idx])
@@ -662,10 +690,18 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 y_tr, y_te = y_valid[train_idx], y_valid[test_idx]
                 bg_sizes.append(int(X_tr.shape[0]))
 
+                # fold signature 기록 (분할 차이 검증용)
+                fold_signatures.append({
+                    "seed": int(seed),
+                    "fold_id": int(fold_id),
+                    "test_record_ids": tuple(sorted(
+                        df_valid.iloc[test_idx]["record_id"].tolist())),
+                })
+
                 # 3-feature 모델 (금속 포함)
                 dtr = xgb.DMatrix(X_tr, label=y_tr, feature_names=feature_names)
                 model3 = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                    "max_depth": 4, "seed": RANDOM_SEED}, dtr, num_boost_round=100)
+                    "max_depth": 4, "seed": random_seed}, dtr, num_boost_round=100)
 
                 # TreeSHAP (path-dependent, 기본)
                 dte = xgb.DMatrix(X_te, feature_names=feature_names)
@@ -697,7 +733,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 dtr2 = xgb.DMatrix(X_tr2, label=y_tr,
                                    feature_names=[feature_names[0], feature_names[2]])
                 model2 = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
-                    "max_depth": 4, "seed": RANDOM_SEED}, dtr2, num_boost_round=100)
+                    "max_depth": 4, "seed": random_seed}, dtr2, num_boost_round=100)
                 dte2 = xgb.DMatrix(X_te2, feature_names=[feature_names[0], feature_names[2]])
                 pred2 = model2.predict(dte2)
                 pred3 = model3.predict(dte)
@@ -743,6 +779,28 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                         "pred_diff": pred3[k] - pred2[k],
                     })
 
+        # ---- GroupKFold leakage 검사 (train/test 그룹 교집합 0이어야 정상) ----
+        if use_group_kfold and group_overlap_count != 0:
+            raise RuntimeError(
+                f"Group leakage detected: {group_overlap_count} overlapping "
+                f"group(s) between train/test folds for {substance}")
+
+        # ---- fold signature 검증: 10개 반복의 분할이 실제로 다른지 확인 ----
+        # 각 seed의 fold 배정(record_id 집합)을 비교해 동일 분할 반복 여부를 검증
+        n_unique_splits = 0
+        if fold_signatures:
+            seed_sigs = {}
+            for fs in fold_signatures:
+                seed_sigs.setdefault(fs["seed"], []).append(fs["test_record_ids"])
+            # seed별로 fold 배정 집합을 정렬해 비교
+            seed_keys = sorted(seed_sigs.keys())
+            unique_seed_splits = set()
+            for s in seed_keys:
+                # 해당 seed의 fold 배정을 정규화(정렬된 tuple의 tuple)
+                normalized = tuple(sorted(seed_sigs[s]))
+                unique_seed_splits.add(normalized)
+            n_unique_splits = len(unique_seed_splits)
+
         # ---- 시료별 빈도 산출 ----
         neg_sign_freq = np.divide(neg_sign_count, n_assignments,
                                   out=np.zeros(n_total), where=n_assignments > 0)
@@ -756,8 +814,15 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         inter_success_rate = (n_inter_success / n_inter_attempts) if n_inter_attempts > 0 else 0.0
 
         # 80% 안정성 판정 (부호와 dominance를 별도 조건으로, attribution 방법별 독립)
-        stable_tree = (neg_sign_freq >= stability_threshold) & (dom_freq_tree >= stability_threshold)
-        stable_inter = (neg_sign_freq_inter >= stability_threshold) & (dom_freq_inter >= stability_threshold)
+        # 절대 카운트 기준: n_seeds 중 최소 ceil(threshold * n_seeds)회 조건을 만족해야 안정.
+        # (성공 fold 비율로 나누면 2/2 성공 시 100%로 오판 → 절대 횟수 기준 필수)
+        min_success = math.ceil(stability_threshold * n_seeds)
+        stable_tree = (neg_sign_count >= min_success) & (dom_count_tree >= min_success)
+        stable_inter = (
+            (n_inter_assignments >= min_success)
+            & (neg_sign_count_inter >= min_success)
+            & (dom_count_inter >= min_success)
+        )
 
         # ---- Sensitivity별 포함 시료 수 + 잠정 TEL/PEL ----
         sens1_df = df_valid[~stable_tree].reset_index(drop=True)
@@ -810,6 +875,7 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "group_col": group_col,
             "n_groups": int(len(np.unique(groups))) if groups is not None else 0,
             "group_kfold_train_test_overlap": int(group_overlap_count),
+            "n_unique_fold_splits": int(n_unique_splits),
             "N_neg_sign_freq_ge_threshold": n_neg_majority,
             "N_removed_TreeSHAP": n_removed_tree,
             "N_removed_Interventional": n_removed_inter,
@@ -849,12 +915,18 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                 OUTPUT_DIR / f"Step2_7v4_OOF_Raw_{source_name}_{substance}.csv",
                 index=False)
 
+        # fold signature CSV 저장 (10개 반복의 분할 차이 검증용)
+        if fold_signatures:
+            fs_df = pd.DataFrame(fold_signatures)
+            fs_df.to_csv(
+                OUTPUT_DIR / f"Step2_7v4_FoldSignatures_{source_name}_{substance}.csv",
+                index=False)
+
     diag_df = pd.DataFrame(diag_rows)
     telpel_df = pd.DataFrame(tel_pel_rows)
 
     # ---- OOF 반복 구조 메타데이터 (재현성·검증용) ----
-    # dominance_ratio: |SHAP_metal| > ratio * |SHAP_target| (현재 1.0 = 단순 크기 비교)
-    dominance_ratio = 1.0
+    # dominance_ratio: |SHAP_metal| > ratio * |SHAP_target| (config에서 읽음, 기본 1.0)
     # interventional background = 각 fold의 training data 전체 (shap.sample 없음)
     # fold별 실제 행 수는 substance별로 diag_rows에 이미 기록됨 (interventional_background_min/max)
 
@@ -887,11 +959,11 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
 
 
 # =============================================================================
-# Step 3: SHAP EDS/NEDS → TEL/PEL (DRC OK 종만 사용)
+# Step 3: EDS/NEDS → TEL/PEL (DRC OK 종만 사용)
 # =============================================================================
 def step3_tel_pel(filtered_dfs, drc_ok_species, source_name=""):
     print(f"\n{'='*70}")
-    print(f"[Step 3] SHAP EDS/NEDS → TEL/PEL — {source_name}")
+    print(f"[Step 3] EDS/NEDS → TEL/PEL — {source_name}")
     print(f"{'='*70}")
 
     sqg_list = []
@@ -1025,9 +1097,7 @@ def step4_reliability_assessment(final_df, edsneds_data, source_name=""):
             # ROC-AUC: 농도로 EDS/NEDS 분류 능력
             try:
                 auc_score = roc_auc_score(y_true, conc_log)
-                # AUC < 0.5면 방향 반전 (농도↑ → 독성↑이 정상)
-                if auc_score < 0.5:
-                    auc_score = 1 - auc_score
+                # 원래 방향 그대로 보고 (뒤집지 않음)
             except Exception:
                 auc_score = np.nan
 
@@ -1050,7 +1120,7 @@ def step4_reliability_assessment(final_df, edsneds_data, source_name=""):
                 cv_scores = []
                 cv = min(5, n_pos, n_neg)
                 if cv >= 2:
-                    skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_SEED)
+                    skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_seed)
                     for train_idx, test_idx in skf.split(conc_log, y_true):
                         c_train, c_test = conc_log[train_idx], conc_log[test_idx]
                         y_train, y_test = y_true[train_idx], y_true[test_idx]
@@ -1060,13 +1130,11 @@ def step4_reliability_assessment(final_df, edsneds_data, source_name=""):
                         dtrain = xgb.DMatrix(c_train.reshape(-1, 1), label=y_train,
                                              feature_names=["Conc_log"])
                         model = xgb.train({"objective": "binary:logistic", "eta": 0.1,
-                            "max_depth": 3, "seed": RANDOM_SEED}, dtrain, num_boost_round=50)
+                            "max_depth": 3, "seed": random_seed}, dtrain, num_boost_round=50)
                         dtest = xgb.DMatrix(c_test.reshape(-1, 1), feature_names=["Conc_log"])
                         y_pred = model.predict(dtest)
                         if len(np.unique(y_test)) == 2:
                             fold_auc = roc_auc_score(y_test, y_pred)
-                            if fold_auc < 0.5:
-                                fold_auc = 1 - fold_auc
                             cv_scores.append(fold_auc)
                     if cv_scores:
                         cv_auc_mean = np.mean(cv_scores)
@@ -1116,14 +1184,19 @@ def step4_reliability_assessment(final_df, edsneds_data, source_name=""):
 # =============================================================================
 def main():
     diagnose_mode = "--diagnose" in sys.argv
-    group_kfold_mode = "--group-kfold" in sys.argv
+    cfg = load_config()
+    group_cfg = cfg.get("group_kfold", {})
+    group_kfold_mode = (
+        "--group-kfold" in sys.argv
+        or group_cfg.get("enabled", False)
+    )
     print("=" * 70)
     print("고도화 파이프라인 v4: 신뢰도 기반 TEL/PEL 도출")
     print("  Step 1: DB 정제 (mPELQ 필터)")
     print("  Step 2: XGBoost SHAP 종 선별")
     print("  Step 2.5: DRC 평가 → DRC OK 종만 선별")
     print("  Step 2.7: 다물질 SHAP confounder 필터링 (진단/Sensitivity)")
-    print("  Step 3: SHAP EDS/NEDS → TEL/PEL")
+    print("  Step 3: EDS/NEDS → TEL/PEL")
     print("  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC)")
     if diagnose_mode:
         print("  ★ 진단 모드: Step 2.7-v4 (Primary/Sensitivity/Ablation 비교)")

@@ -1,0 +1,4 @@
+Source,Substance,N_total,n_splits,n_repeats,n_oof_per_sample_min,n_oof_per_sample_max,stability_threshold,dominance_ratio,interventional_background_min,interventional_background_max,interventional_background_sampling
+SCCWRP,DDTs,176,5,10,10,10,0.8,1.0,140,141,full_training_fold
+SCCWRP,CHLs,601,5,10,10,10,0.8,1.0,453,505,full_training_fold
+SCCWRP,PCBs,176,5,10,10,10,0.8,1.0,140,141,full_training_fold
