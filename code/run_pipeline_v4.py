@@ -668,6 +668,10 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         residual_sum = np.zeros(n_total, dtype=float)          # OOF 잔차 누적
         # cutoff별 이상 판정 횟수 (민감도 분석: 2.5%/5%/10%)
         residual_anomaly_counts = {c: np.zeros(n_total, dtype=int) for c in residual_cutoffs}
+        # 저농도 DRC gate (C80) 보조 카운터 — 고농도 강독성 자료를 노이즈로 오판하는 것 방지
+        n_c80_valid = np.zeros(n_total, dtype=int)         # 유효 C80 할당 횟수 (gate 적용 가능 fold)
+        c80_sum = np.zeros(n_total, dtype=float)           # C80 누적 (record별 중앙 C80 산출용)
+        n_blocked_high_conc = np.zeros(n_total, dtype=int) # 농도≥C80 으로 gate에 차단된 이상 후보 횟수
 
         # fold signature 저장: 각 seed의 fold 배정을 기록해 10개 반복의 분할 차이 검증
         fold_signatures = []  # [{seed, fold_id, test_record_ids}]
@@ -806,12 +810,56 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                         inner_pred[ite_idx] = m2_in.predict(dte2_in)
 
                 resid_inner_oof = y_tr - inner_pred       # inner-OOF 잔차
+                # ---- 저농도 DRC gate (C80) ----
+                # C80 = monotonic DRC가 80% survival로 하강하는 농도 (로그 스케일).
+                # 노이즈 제거의 목적 = "DRC가 무독성(생존>=80)이라 예측하는 저농도 영역인데
+                #   실제로는 독성(생존<80)을 보이는" 독성 기여도가 낮은 자료만 제외.
+                # 고농도에서 DRC가 예측한 것보다 생존율이 더 낮은 강독성 자료는
+                #   진짜 독성 근거이므로 제외하지 않는다 → conc < C80 gate가 이를 보호.
+                # 각 test 기록의 TOC를 고정한 채 training 농도범위에서 예측해 C80 산출.
+                feature_names_2 = [feature_names[0], feature_names[2]]
+                conc_min_tr = float(X_tr2[:, 0].min())
+                conc_max_tr = float(X_tr2[:, 0].max())
+                conc_grid = np.linspace(conc_min_tr, conc_max_tr, 200)
+                # TOC 값별 C80 캐시 (성능 최적화: 동일 TOC 기록 다수 존재)
+                c80_cache = {}
                 for k, idx in enumerate(test_idx):
                     residual_sum[idx] += resid_te[k]
+                    surv_k = float(y_te[k])           # 관측 생존율
+                    conc_k = float(X_te2[k, 0])       # 관측 농도 (로그)
+                    toc_k = float(X_te2[k, 1])        # TOC (고정)
+
+                    # C80 산출 (TOC 고정)
+                    c80 = c80_cache.get(toc_k)
+                    if c80 is None:
+                        X_grid = np.column_stack([conc_grid, np.full(len(conc_grid), toc_k)])
+                        pred_grid = model2.predict(
+                            xgb.DMatrix(X_grid, feature_names=feature_names_2))
+                        cross_idx = np.where(pred_grid < 80)[0]
+                        if len(cross_idx) == 0 or cross_idx[0] == 0:
+                            # crossing 없음 OR 저농도부터 이미 80% 미만(유효 no-effect 영역 없음)
+                            # → 해당 TOC에 대해 필터 미적용 (gate 통과 불가)
+                            c80 = None
+                        else:
+                            c80 = float(conc_grid[cross_idx[0]])
+                        c80_cache[toc_k] = c80
+
+                    if c80 is not None:
+                        n_c80_valid[idx] += 1
+                        c80_sum[idx] += c80
+
                     for c in residual_cutoffs:
                         resid_cut = np.quantile(resid_inner_oof, c)
-                        if resid_te[k] < resid_cut:
+                        # 저농도 DRC gate 적용: 관측생존<80 AND 관측농도<C80 AND 잔차<cutoff
+                        if (c80 is not None) and (surv_k < 80) and (conc_k < c80) \
+                                and (resid_te[k] < resid_cut):
                             residual_anomaly_counts[c][idx] += 1
+                        elif (c80 is not None) and (surv_k < 80) and (conc_k >= c80) \
+                                and (resid_te[k] < resid_cut):
+                            # 고농도(농도>=C80) 강독성 자료 → gate에 차단되어 이상 판정에서 제외
+                            # (진단 카운터: 기존 코드라면 노이즈로 오판됐을 후보)
+                            n_blocked_high_conc[idx] += 1
+
 
                 # 누적 + 시료별 원자료 수집
                 for k, idx in enumerate(test_idx):
@@ -919,6 +967,22 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         # DRC-inconsistent toxicity (제외 대상, Noise로 단정하지 않음)
         uncertain_eds = is_eds_raw & drc_inconsistent
 
+        # ---- 저농도 DRC gate (C80) 검증 ----
+        # 제외된 모든 기록이 fold-specific C80 아래 농도인지 확인.
+        # C80_above_count는 반드시 0이어야 정상 (고농도 강독성 자료가 노이즈로 빠지면 위반).
+        median_c80 = np.divide(c80_sum, n_c80_valid,
+                               out=np.full(n_total, np.nan), where=n_c80_valid > 0)
+        conc_obs = df_valid[target_col].values  # 관측 농도 (로그 스케일, Conc_log)
+        c80_below_count = int(np.sum(drc_inconsistent & (n_c80_valid > 0) & (conc_obs < median_c80)))
+        c80_above_count = int(np.sum(drc_inconsistent & (n_c80_valid > 0) & (conc_obs >= median_c80)))
+        n_valid_c80 = int(np.sum(n_c80_valid > 0))
+        n_drc_inconsistent = int(drc_inconsistent.sum())
+        # 제외·유지 EDS 농도 중앙값 (로그 스케일 → 원래 µg/kg dw 복원)
+        excluded_conc_log = conc_obs[uncertain_eds]
+        retained_conc_log = conc_obs[target_supported_eds]
+        excl_med_orig = float(np.median(10 ** excluded_conc_log - 1)) if len(excluded_conc_log) > 0 else np.nan
+        ret_med_orig = float(np.median(10 ** retained_conc_log - 1)) if len(retained_conc_log) > 0 else np.nan
+
         # ---- Primary 선별 DataFrame (Step 3 입력용) ----
         # Primary = NEDS 전체 + DRC-consistent EDS
         # 안전장치: 제거율이 max_removal_rate 초과 시 DRC 모델 부적합 → chemistry screen only로 대체
@@ -1001,6 +1065,9 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         print(f"    대상물질 부호 안정(SHAP_target<0 ≥{stability_threshold:.0%}): {n_neg_majority} 시료 (보조 진단)")
         print(f"    Ablation: 금속 포함 시 OOF 예측 평균 변화 {mean_ablation:+.4f} "
               f"(음수 {n_ablation_negative} 시료)")
+        print(f"    C80 gate 검증: 제외 {n_drc_inconsistent}건 중 C80 미만 {c80_below_count} / "
+              f"C80 이상 {c80_above_count} (유효 C80 {n_valid_c80}건) "
+              f"→ 제외 EDS 농도 중앙값 {excl_med_orig:.4f} vs 유지 EDS {ret_med_orig:.4f} µg/kg dw")
 
         diag_rows.append({
             "Source": source_name, "Substance": substance, "N_total": n_total,
@@ -1031,6 +1098,12 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             "Mean_ablation_NEDS": round(mean_ablation_neds, 4),
             "N_ablation_negative": n_ablation_negative,
             "N_ablation_negative_pct": round(100.0 * n_ablation_negative / n_total, 2),
+            "C80_below_count": c80_below_count,
+            "C80_above_count": c80_above_count,
+            "N_valid_C80_assignments": n_valid_c80,
+            "N_DRC_inconsistent": n_drc_inconsistent,
+            "Excluded_EDS_Conc_Median_dw": (round(excl_med_orig, 4) if not np.isnan(excl_med_orig) else None),
+            "Retained_EDS_Conc_Median_dw": (round(ret_med_orig, 4) if not np.isnan(ret_med_orig) else None),
         })
 
         for label, telpel in [("Primary", primary_telpel),
@@ -1051,6 +1124,22 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
             raw_df.to_csv(
                 OUTPUT_DIR / f"Step2_7v4_OOF_Raw_{source_name}_{substance}.csv",
                 index=False)
+
+        # Fig. 2 재설계용: OOF DRC 잔차 + drc_inconsistent flag 저장 (필터 전 전체 기록)
+        # residual_mean = OOF 잔차 평균 (실제 생존율 - DRC 예측 생존율)
+        # drc_inconsistent = Primary cutoff 기준 안정적 이상 판정 (제외 대상)
+        residual_mean = np.divide(residual_sum, n_assignments,
+                                  out=np.full(n_total, np.nan), where=n_assignments > 0)
+        drc_resid_df = df_valid.copy()
+        drc_resid_df["residual_mean"] = residual_mean
+        drc_resid_df["drc_inconsistent"] = drc_inconsistent.astype(int)
+        drc_resid_df["is_eds_raw"] = is_eds_raw.astype(int)
+        drc_resid_df["Data_Type"] = np.where(
+            is_neds, "NEDS",
+            np.where(drc_inconsistent, "DRC-inconsistent", "EDS"))
+        drc_resid_df.to_csv(
+            OUTPUT_DIR / f"Step2_7v4_DRC_Residual_{source_name}_{substance}.csv",
+            index=False)
 
         # fold signature CSV 저장 (10개 반복의 분할 차이 검증용)
         if fold_signatures:
