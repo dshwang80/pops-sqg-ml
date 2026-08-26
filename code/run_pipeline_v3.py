@@ -47,7 +47,7 @@ NOAA_DB_PATH = DATA_DIR / "US_Sediment_Risk_Analytical_Set_Mainland.csv"
 SCCWRP_DB_PATH = DATA_DIR / "sccwrp_noaa_compatible.csv"
 INTEGRATED_DB_PATH = DATA_DIR / "integrated_matching_db_v2.csv"
 
-TARGET_SUBSTANCES = ["DDTs", "CHLs", "PCBs", "TCDD"]
+TARGET_SUBSTANCES = ["DDTs", "CHLs", "PCBs"]
 
 TARGET_ISOMERS = {
     "DDTs":      ["o,p'-DDD", "o,p'-DDE", "o,p'-DDT", "p,p'-DDD", "p,p'-DDE", "p,p'-DDT"],
@@ -56,14 +56,6 @@ TARGET_ISOMERS = {
     "PCBs":      ["PCB008","PCB018","PCB028","PCB044","PCB052","PCB066","PCB101",
                   "PCB105","PCB118","PCB128","PCB138","PCB153","PCB170","PCB180",
                   "PCB187","PCB195","PCB206","PCB209"],
-    "TCDD":      ["1,2,3,4,6,7,8-Heptachlorodibenzo-p-dioxin",
-                  "1,2,3,4,7,8-Hexachlorodibenzo-p-dioxin",
-                  "1,2,3,6,7,8-Hexachlorodibenzo-p-dioxin",
-                  "1,2,3,7,8-Pentachlorodibenzo-_p-dioxin",
-                  "1,2,3,7,8,9-Hexachlorodibenzo-p-dioxin",
-                  "2,3,7,8-TCDD_(Dioxin)",
-                  "2,3,7,8-TCDF_(Tetrachlorodibenzofuran)",
-                  "Octachlorodibenzo-p-dioxin"],
     "PAHs":      ["Naphthalene","Acenaphthylene","Acenaphthene","Fluorene",
                   "Phenanthrene","Anthracene","Fluoranthene","Pyrene",
                   "Benzo(a)anthracene","Chrysene","Benzo(a)pyrene",
@@ -76,10 +68,10 @@ METAL_COLS = ["Arsenic","Cadmium","Chromium,_total","Copper",
 PEL_METALS = {"Arsenic":41.6, "Cadmium":4.21, "Chromium,_total":160, "Copper":108,
               "Lead":112, "Mercury":0.7, "Nickel":42.8, "Silver":1.77, "Zinc":271}
 
-CCME_ISQG = {"DDTs":1.19, "CHLs":2.26, "PAHs":1684, "Dieldrin":0.71, "PCBs":21.5, "TCDD":0.00085}
-CCME_PEL = {"DDTs":4.77, "CHLs":4.79, "PAHs":16770, "Dieldrin":4.30, "PCBs":189, "TCDD":0.0215}
-NOAA_TEL_DW = {"DDTs":3.89, "CHLs":2.26, "PAHs":1684, "Dieldrin":0.72, "PCBs":22.7, "TCDD":np.nan}
-NOAA_PEL_DW = {"DDTs":51.7, "CHLs":4.79, "PAHs":16770, "Dieldrin":4.30, "PCBs":180, "TCDD":np.nan}
+CCME_ISQG = {"DDTs":1.19, "CHLs":2.26, "PAHs":1684, "Dieldrin":0.71, "PCBs":21.5}
+CCME_PEL = {"DDTs":4.77, "CHLs":4.79, "PAHs":16770, "Dieldrin":4.30, "PCBs":189}
+NOAA_TEL_DW = {"DDTs":3.89, "CHLs":2.26, "PAHs":1684, "Dieldrin":0.72, "PCBs":22.7}
+NOAA_PEL_DW = {"DDTs":51.7, "CHLs":4.79, "PAHs":16770, "Dieldrin":4.30, "PCBs":180}
 
 EXCLUDE_PATTERNS = ["Human liver cell line", "species not known", "Photobacterium",
                     "Crassostrea", "Echinoderm"]
@@ -91,31 +83,14 @@ eqp_params = {
     'PCBs':     {'log_kow': 6.80, 'ccc_ugL': 0.03},
     'Dieldrin': {'log_kow': 5.37, 'ccc_ugL': 0.1469},
     'PAHs':     {'log_kow': 5.20, 'ccc_ugL': 2.322},
-    # TCDD: EPA 공식 수생태계 WQC 없음 → EqP 필터 skip
 }
 
 # mPELQ threshold: 평균 중금속이 PEL의 50% 초과 → 타 독성 기여도 의심
-# TCDD는 필터 미적용 (N 부족 → 모든 DB 사용)
 MPELQ_METALS_THRESHOLD = 0.5
-MPELQ_METALS_THRESHOLD_TCDD = 999.0  # 필터 사실상 해제
 
 # 단위 변환: DB 원본 단위 → ng/g (µg/kg dw)
-# TCDD/TEQ는 pg/g로 보고 → ng/g 변환 (÷1000)
 UNIT_FACTOR = {
     "DDTs": 1.0, "CHLs": 1.0, "PCBs": 1.0, "PAHs": 1.0, "Dieldrin": 1.0,
-    "TCDD": 0.001,  # pg/g → ng/g (TEQ에도 동일 적용)
-}
-
-# WHO 2005 TEF (Van den Berg et al., 2006) — TCDD 동족체 TEQ 환산
-WHO_TEF = {
-    "1,2,3,4,6,7,8-Heptachlorodibenzo-p-dioxin": 0.01,
-    "1,2,3,4,7,8-Hexachlorodibenzo-p-dioxin":   0.1,
-    "1,2,3,6,7,8-Hexachlorodibenzo-p-dioxin":   0.1,
-    "1,2,3,7,8-Pentachlorodibenzo-_p-dioxin":   1.0,
-    "1,2,3,7,8,9-Hexachlorodibenzo-p-dioxin":   0.1,
-    "2,3,7,8-TCDD_(Dioxin)":                     1.0,
-    "2,3,7,8-TCDF_(Tetrachlorodibenzofuran)":    0.1,
-    "Octachlorodibenzo-p-dioxin":               0.0003,
 }
 
 
@@ -196,26 +171,6 @@ def step1_db_curation(df_raw, source_name=""):
             df_base["Sum_Dieldrin_OC_log"] = np.log10(
                 (df_base["Dieldrin"] / df_base["TOC_pct"]) + 1)
             df_base.loc[df_base["Dieldrin"].isna(), "Sum_Dieldrin_OC_log"] = np.nan
-        elif substance == "TCDD":
-            # TCDD: 8종 동족체 WHO TEF 가중합 → TEQ (pg/g)
-            # ND(음수)는 0 처리, 측정된 동족체만 가중합
-            isomers = TARGET_ISOMERS["TCDD"]
-            for iso in isomers:
-                if iso not in df_base.columns:
-                    df_base[iso] = np.nan
-            teq = pd.Series(0.0, index=df_base.index)
-            measured_any = pd.Series(False, index=df_base.index)
-            for iso in isomers:
-                vals = df_base[iso].copy()
-                nd_mask = vals.isna() | (vals < 0)
-                vals[nd_mask] = 0
-                teq += vals * WHO_TEF[iso]
-                measured_any |= ~nd_mask
-            # pg/g → ng/g 변환
-            teq = teq * UNIT_FACTOR["TCDD"]
-            df_base["Sum_TCDD_OC_log"] = np.log10(
-                (teq / df_base["TOC_pct"]) + 1)
-            df_base.loc[~measured_any | (teq <= 0), "Sum_TCDD_OC_log"] = np.nan
         else:
             isomers = TARGET_ISOMERS[substance]
             for iso in isomers:
@@ -239,8 +194,7 @@ def step1_db_curation(df_raw, source_name=""):
             continue
 
         # ★ mPELQ 중금속 사전 필터: 타 독성 기여도 의심 샘플 제거
-        # TCDD는 필터 미적용 (N 부족 → 모든 DB 사용)
-        mpelq_thresh = MPELQ_METALS_THRESHOLD_TCDD if substance == "TCDD" else MPELQ_METALS_THRESHOLD
+        mpelq_thresh = MPELQ_METALS_THRESHOLD
         n_before_mpelq = len(df_sub)
         df_sub = df_sub[df_sub["mPELQ_Metals"] <= mpelq_thresh].copy()
         n_after_mpelq = len(df_sub)
@@ -562,13 +516,8 @@ def step2_7_confounder_filtering(cleaned_dfs, drc_ok_species, source_name=""):
             shap_toc = pred[:, 2]
 
             # 타 독성 기여도 평가: |SHAP_mPELQ| > threshold×|SHAP_target| → confounder-dominated
-            # TCDD만 1.5× 완화 (N≥20 확보), 다른 물질은 1.0× 유지 (기존 확정값 보존)
-            # ★ TCDD no-filter 모드: confounder 필터 완전 해제
-            if substance == "TCDD":
-                confounder_dominated = np.zeros(len(df_valid), dtype=bool)
-            else:
-                confounder_ratio = 1.5 if substance == "TCDD" else 1.0
-                confounder_dominated = np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target)
+            confounder_ratio = 1.0
+            confounder_dominated = np.abs(shap_mpelq) > confounder_ratio * np.abs(shap_target)
             n_dominated = int(confounder_dominated.sum())
             n_total = len(confounder_dominated)
 

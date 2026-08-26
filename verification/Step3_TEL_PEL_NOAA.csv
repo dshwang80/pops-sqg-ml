@@ -1,0 +1,4 @@
+Source,Substance,Total_N,N_EDS,N_NEDS,N_DRC_OK_Species,DRC_OK_Species,Our_TEL_dw,Our_PEL_dw,CCME_ISQG,CCME_PEL,NOAA_TEL,NOAA_PEL
+NOAA,DDTs,4387,1026,3361,7,Ampelisca abdita; Leptocheirus plumulosus; Rhepoxynius abronius; Strongylocentrotus purpuratus; Dendraster excentricus; Arbacia punctulata; Haliotis rufescens,2.6462,12.4907,1.19,4.77,3.89,51.7
+NOAA,CHLs,3150,440,2710,3,Ampelisca abdita; Leptocheirus plumulosus; Arbacia punctulata,2.0422,16.5344,2.26,4.79,2.26,4.79
+NOAA,PCBs,3877,774,3103,6,Ampelisca abdita; Leptocheirus plumulosus; Rhepoxynius abronius; Strongylocentrotus purpuratus; Arbacia punctulata; Haliotis rufescens,6.4142,30.5275,21.5,189.0,22.7,180.0

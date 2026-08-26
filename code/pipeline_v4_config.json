@@ -1,0 +1,34 @@
+{
+  "random_seed": 42,
+  "repeat_seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  "n_folds": 5,
+  "n_repeats": 10,
+  "stability_threshold": 0.80,
+  "dominance_ratio": 1.0,
+  "interventional_background_sampling": "full_training_fold",
+  "mpelq_metals_threshold": 0.5,
+  "min_metals_measured": 3,
+  "anchor_species_sensitivity": {
+    "enabled": true,
+    "species": ["Leptocheirus plumulosus"],
+    "substances": ["DDTs", "PCBs"]
+  },
+  "mpelq_sensitivity_cutoffs": [0.25, 0.5, 1.0],
+  "bootstrap_n_iterations": 2000,
+  "bootstrap_random_seed": 42,
+  "bootstrap_ci_level": 0.95,
+  "bootstrap_cluster_col_priority": ["station_key", "Station", "sample_key", "SampleID"],
+  "group_kfold": {
+    "enabled": true,
+    "group_col_priority": ["station_key", "Station", "sample_key", "SampleID"],
+    "n_splits": 5
+  },
+  "package_versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.2.0",
+    "shap": "0.51.0"
+  }
+}
