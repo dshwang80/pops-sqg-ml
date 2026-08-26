@@ -1,4 +1,4 @@
 Source,Substance,Total_N,N_EDS,N_NEDS,N_DRC_OK_Species,DRC_OK_Species,Our_TEL_dw,Our_PEL_dw,CCME_ISQG,CCME_PEL,NOAA_TEL,NOAA_PEL
-SCCWRP,DDTs,176,91,85,2,Haliotis rufescens; Arbacia punctulata,6.0335,46.5207,1.19,4.77,3.89,51.7
-SCCWRP,CHLs,601,316,285,4,Eohaustorius estuarius; Strongylocentrotus purpuratus; Haliotis rufescens; Arbacia punctulata,1.8996,7.8931,2.26,4.79,2.26,4.79
-SCCWRP,PCBs,176,91,85,2,Haliotis rufescens; Arbacia punctulata,12.3069,35.1658,21.5,189.0,22.7,180.0
+SCCWRP,DDTs,168,83,85,2,Haliotis rufescens; Arbacia punctulata,5.8049,46.5207,1.19,4.77,3.89,51.7
+SCCWRP,CHLs,583,298,285,4,Eohaustorius estuarius; Strongylocentrotus purpuratus; Haliotis rufescens; Arbacia punctulata,1.8603,7.9022,2.26,4.79,2.26,4.79
+SCCWRP,PCBs,171,86,85,2,Haliotis rufescens; Arbacia punctulata,12.434,35.2631,21.5,189.0,22.7,180.0

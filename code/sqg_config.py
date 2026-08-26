@@ -102,8 +102,8 @@ SUB_MAP = {'DDTs': 'DDT', 'CHLs': 'CHLs', 'PCBs': 'PCB'}
 # Method 1: Empirical SQG (TEL/PEL)
 #   mPELQ 0.5 + confounder 1.5×, ROC-AUC 0.933
 #   integrated_matching_db_v2.csv: NOAA SEDTOX 단위 = pg/g → ng/g 변환
-EMP_TEL = {'DDT': 4.9834, 'CHLs': 3.9143, 'PCB': 8.5557}
-EMP_PEL = {'DDT': 21.8168, 'CHLs': 23.8046, 'PCB': 51.6125}
+EMP_TEL = {'DDT': 2.7238, 'CHLs': 2.0660, 'PCB': 6.9547}
+EMP_PEL = {'DDT': 13.2091, 'CHLs': 17.1740, 'PCB': 31.7366}
 
 # v3 pipeline TEL (개별 모델) — 원래 단위 기하평균으로 재계산 (Method B, CCME 지침)
 V3_TEL = {
