@@ -352,10 +352,11 @@ def _oof_shap_for_species(X, y, groups, random_seed):
                          random_state=random_seed + rep)
         oof_shap_chem = np.full(len(X), np.nan)
         oof_shap_toc = np.full(len(X), np.nan)
+        rep_folds = []
         try:
             for train_idx, test_idx in gkf.split(X, y, groups):
-                # 이 반복의 분할 시그니처(각 fold의 test 인덱스 집합) 기록
-                fold_split_signatures.add(tuple(sorted(test_idx.tolist())))
+                # 이 반복의 각 fold test 인덱스 집합을 수집
+                rep_folds.append(tuple(sorted(test_idx.tolist())))
                 X_tr, y_tr = X[train_idx], y[train_idx]
                 X_te = X[test_idx]
                 dtr = xgb.DMatrix(X_tr, label=y_tr,
@@ -372,6 +373,11 @@ def _oof_shap_for_species(X, y, groups, random_seed):
         except Exception:
             # GroupKFold 실패 시 KFold 대체 금지 → 이 반복은 실패 처리
             continue
+
+        # 반복별 5개 fold를 하나의 signature로 묶어 저장 (반복 분할 단위 고유성)
+        if rep_folds:
+            rep_signature = tuple(sorted(rep_folds))
+            fold_split_signatures.add(rep_signature)
 
         valid = ~np.isnan(oof_shap_chem)
         if valid.sum() == 0:
@@ -456,8 +462,8 @@ def step2_species_selection(substance_dfs, source_name=""):
                 imp_chem = imp_toc = cor_chem = np.nan
 
             # ---- OOF SHAP (5-fold × 10회 GroupKFold) ----
-            # ★ 행별 우선순위 결합으로 group_id 생성 (station_key → sample_key →
-            #   StudyID+Station → SampleID → 좌표 → record_id).
+            # ★ 행별 우선순위 결합으로 group_id 생성 (station_key → StudyID+Station →
+            #   sample_key → SampleID → 좌표 → record_id).
             #   NOAA의 Station은 고유 정점이 아니므로 좌표로 그룹핑한다.
             groups = _build_group_ids(df_sp)
             n_groups = len(np.unique(groups))
@@ -845,8 +851,8 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
         else:
             df_valid["sample_id"] = df_valid["record_id"]
 
-        # GroupKFold용 group_id: 행별 우선순위 결합 (station_key → sample_key →
-        # StudyID+Station → SampleID → 좌표 → record_id).
+        # GroupKFold용 group_id: 행별 우선순위 결합 (station_key → StudyID+Station →
+        # sample_key → SampleID → 좌표 → record_id).
         # NOAA의 Station은 고유 정점이 아니므로 좌표로 그룹핑한다.
         groups = _build_group_ids(df_valid)
         group_col = "group_id"  # 진단 기록용 (실제 컬럼은 아님)
