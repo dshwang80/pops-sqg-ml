@@ -762,7 +762,7 @@ def step2_7_confounder_filtering(cleaned_dfs, selected_species, source_name=""):
 
 
 # =============================================================================
-# Step 2.7-v4: confounder 필터 재설계 (진단 + Primary/Sensitivity 분리)
+# Step 2.7-v5.3: confounder 필터 재설계 (진단 + Primary/Sensitivity 분리)
 # =============================================================================
 def _compute_tel_pel_from_df(df, target_col):
     """Primary TEL/PEL 계산 — SHAP-independent (survival만으로 EDS/NEDS 분류).
@@ -814,11 +814,13 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
 
     분석 구조:
       - Primary:       OOF-SHAP sign-aware joint 카운터 (TreeSHAP ∩ Interventional 8/10 합의)
-                      5조건 AND: observed_survival<80 AND pred_full<80 AND shap_target≥0
-                                  AND negative_non_target<0 AND pred_without_non_target≥80
-      - Sensitivity 1: residual cutoff 2.5% (더 보수적)
-      - Sensitivity 2: residual cutoff 10% (더 관대)
-      - Sensitivity 3: chemistry screen only (ML 기록 필터 미적용)
+                      R_NT = (pred_without_non_target − pred_full) / (80 − pred_full) ≥ 0.5
+                      fold gate: observed_survival<80 AND pred_full<80 AND shap_target≥0
+                                  AND negative_non_target<0
+      - Sensitivity 1: Strict (R_NT ≥ 1.0, 완전 회복 — 구 c5)
+      - Sensitivity 2: Exploratory (R_NT ≥ 0.25)
+      - Sensitivity 3: ChemScreen (chemistry screen only, ML 기록 필터 미적용)
+      - Sensitivity 4: Unfiltered (기본 QA·종 선별만 적용, 비교 기준선)
       - Ablation:      금속-only 제거 모델의 OOF prediction difference (보조 진단)
 
     OOF-SHAP 판정:
@@ -828,7 +830,7 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
       - DRC(C80 gate, 잔차)는 보조 진단 (Primary 제거 아님)
 
     재현성: n_folds/n_seeds/stability_threshold가 None이면 pipeline_v5_config.json에서 읽는다.
-      - residual cutoff 민감도(2.5%/5%/10%)를 Supplementary에 함께 제시.
+      - Strict/Exploratory/ChemScreen/Unfiltered 민감도를 Supplementary에 함께 제시.
       - 제거율이 max_removal_rate 초과 시 applicability_pass=False 플래그 (all-or-none 폐지).
 
     use_group_kfold=True: record-level KFold 대신 GroupKFold(그룹=station/sample cluster)를
@@ -1493,7 +1495,7 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         #   primary_excluded도 무효화해야 하지만, v5.2 설계는 primary_excluded를 유지.
         #   따라서 변수명을 applicability_pass로 변경하여 의미를 명확히 함.
         #   applicability_pass=True: SHAP 필터 정상 적용 (제거율 ≤ max_removal_rate)
-        #   applicability_pass=False: 제거율 초과, primary_excluded는 후보로만 표시
+        #   applicability_pass=False indicates an applicability warning; consensus exclusions remain applied.
         removal_rate = (primary_excluded.sum() / (primary_retained_eds.sum() + primary_excluded.sum())) \
             if (primary_retained_eds.sum() + primary_excluded.sum()) > 0 else 0.0
         applicability_pass = removal_rate <= max_removal_rate
@@ -1548,7 +1550,7 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         # ---- Sensitivity 구성 (v5.3: tier + chemical screen + unfiltered) ----
         # Strict       = R_NT ≥ 1.0 (완전 회복, 구 c5) — TreeSHAP ∩ Interventional 합의
         # Exploratory  = R_NT ≥ 0.25 — 동일 합의
-        # ChemScreen   = mPELQ ≤ 0.5 하드 제외(구 Step 1 필터) + SHAP Primary 제외
+        # ChemScreen   = mPELQ ≤ 0.5 하드 제외(구 Step 1 필터)만 적용 (SHAP 미적용 arm)
         # Unfiltered   = 기본 QA·종 선별만 적용 (SHAP 제외 없음, 비교 기준선)
         strict_excluded = (
             is_eds_raw
@@ -2094,7 +2096,7 @@ def main():
     print("  Step 3: EDS/NEDS → TEL/PEL")
     print("  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC, GroupKFold)")
     if diagnose_mode:
-        print("  ★ 진단 모드: Step 2.7-v5 (SHAP Primary/Sensitivity/DRC 보조진단)")
+        print("  ★ 진단 모드: Step 2.7-v5.3 (SHAP Primary/Sensitivity/DRC 보조진단)")
     print("=" * 70)
 
     all_sqg = []
@@ -2121,7 +2123,7 @@ def main():
             substance_dfs, df_eval, source_name)
 
         if diagnose_mode:
-            # 진단 모드: Step 2.7-v4 (Primary/Sensitivity/Ablation) 실행 후 종료
+            # 진단 모드: Step 2.7-v5.3 (Primary/Sensitivity/Ablation) 실행 후 종료
             primary_filtered_dfs, diag_df, telpel_df = step2_7_confounder_filtering_v5(
                 cleaned_dfs, selected_species, source_name,
                 use_group_kfold=group_kfold_mode)
@@ -2153,7 +2155,7 @@ def main():
     if diagnose_mode:
         # 진단 모드: Sensitivity 결과 저장 후 종료
         print(f"\n{'='*70}")
-        print("진단 모드 결과 요약 (Step 2.7-v4)")
+        print("진단 모드 결과 요약 (Step 2.7-v5.3)")
         print(f"{'='*70}")
         if all_diag:
             diag_all = pd.concat(all_diag, ignore_index=True)
