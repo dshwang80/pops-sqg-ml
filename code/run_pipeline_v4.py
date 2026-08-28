@@ -1009,55 +1009,50 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                     inner_pred = np.full(len(train_idx), np.nan, dtype=float)
 
                 resid_inner_oof = y_tr - inner_pred       # inner-OOF 잔차
-                # ---- 저농도 DRC gate (C80) ----
-                # C80 = monotonic DRC가 80% survival로 하강하는 농도 (로그 스케일).
-                # 노이즈 제거의 목적 = "DRC가 무독성(생존>=80)이라 예측하는 저농도 영역인데
+                # ---- 저농도 DRC gate (C80) — 표준화된 단일 C80 (TOC=1% 고정) ----
+                # C80 = monotonic 2-feature DRC가 80% survival로 하강하는 농도 (로그 스케일).
+                # 사용자 확정 (2026-08-27): DRC 예측은 2-feature [conc, TOC] (실제 TOC 사용),
+                #   C80 산출은 TOC=1.0 고정으로 fold당 단일값.
+                #   → 잔차 예측: 실제 TOC / 저농도 판정: 동일 C80_fold / Fig.2 X축과 일치.
+                # 노이즈 제거 목적 = "DRC가 무독성(생존>=80)이라 예측하는 저농도 영역인데
                 #   실제로는 독성(생존<80)을 보이는" 독성 기여도가 낮은 자료만 제외.
-                # 고농도에서 DRC가 예측한 것보다 생존율이 더 낮은 강독성 자료는
-                #   진짜 독성 근거이므로 제외하지 않는다 → conc < C80 gate가 이를 보호.
-                # 각 test 기록의 TOC를 고정한 채 training 농도범위에서 예측해 C80 산출.
+                # 고농도 강독성 자료는 진짜 독성 근거이므로 제외하지 않는다 → conc < C80 gate 보호.
                 feature_names_2 = [feature_names[0], feature_names[2]]
                 conc_min_tr = float(X_tr2[:, 0].min())
                 conc_max_tr = float(X_tr2[:, 0].max())
                 conc_grid = np.linspace(conc_min_tr, conc_max_tr, 200)
-                # TOC 값별 C80 캐시 (성능 최적화: 동일 TOC 기록 다수 존재)
-                c80_cache = {}
+                # 표준화된 단일 C80: TOC=1.0 고정 (시료별 TOC 미사용)
+                X_grid_std = np.column_stack([conc_grid, np.ones(len(conc_grid))])
+                pred_grid_std = model2.predict(
+                    xgb.DMatrix(X_grid_std, feature_names=feature_names_2))
+                cross_idx = np.where(pred_grid_std < 80)[0]
+                if len(cross_idx) == 0 or cross_idx[0] == 0:
+                    # crossing 없음 OR 저농도부터 이미 80% 미만(유효 no-effect 영역 없음)
+                    # → 해당 fold에 대해 필터 미적용 (gate 통과 불가)
+                    c80_fold = None
+                else:
+                    c80_fold = float(conc_grid[cross_idx[0]])
+
                 for k, idx in enumerate(test_idx):
                     residual_sum[idx] += resid_te[k]
                     surv_k = float(y_te[k])           # 관측 생존율
-                    conc_k = float(X_te2[k, 0])       # 관측 농도 (로그)
-                    toc_k = float(X_te2[k, 1])        # TOC (고정)
+                    conc_k = float(X_te2[k, 0])       # 관측 농도 (로그, 1% TOC 보정)
 
-                    # C80 산출 (TOC 고정)
-                    c80 = c80_cache.get(toc_k)
-                    if c80 is None:
-                        X_grid = np.column_stack([conc_grid, np.full(len(conc_grid), toc_k)])
-                        pred_grid = model2.predict(
-                            xgb.DMatrix(X_grid, feature_names=feature_names_2))
-                        cross_idx = np.where(pred_grid < 80)[0]
-                        if len(cross_idx) == 0 or cross_idx[0] == 0:
-                            # crossing 없음 OR 저농도부터 이미 80% 미만(유효 no-effect 영역 없음)
-                            # → 해당 TOC에 대해 필터 미적용 (gate 통과 불가)
-                            c80 = None
-                        else:
-                            c80 = float(conc_grid[cross_idx[0]])
-                        c80_cache[toc_k] = c80
-
-                    if c80 is not None:
+                    if c80_fold is not None:
                         n_c80_valid[idx] += 1
-                        c80_sum[idx] += c80
-                        if conc_k < c80:
+                        c80_sum[idx] += c80_fold
+                        if conc_k < c80_fold:
                             n_below_c80[idx] += 1
 
                     for c in residual_cutoffs:
                         resid_cut = np.quantile(resid_inner_oof, c)
-                        # 저농도 DRC gate 적용: 관측생존<80 AND 관측농도<C80 AND 잔차<cutoff
-                        if (c80 is not None) and (surv_k < 80) and (conc_k < c80) \
+                        # 저농도 DRC gate 적용: 관측생존<80 AND 관측농도<C80_fold AND 잔차<cutoff
+                        if (c80_fold is not None) and (surv_k < 80) and (conc_k < c80_fold) \
                                 and (resid_te[k] < resid_cut):
                             residual_anomaly_counts[c][idx] += 1
-                        elif (c80 is not None) and (surv_k < 80) and (conc_k >= c80) \
+                        elif (c80_fold is not None) and (surv_k < 80) and (conc_k >= c80_fold) \
                                 and (resid_te[k] < resid_cut):
-                            # 고농도(농도>=C80) 강독성 자료 → gate에 차단되어 이상 판정에서 제외
+                            # 고농도(농도>=C80_fold) 강독성 자료 → gate에 차단되어 이상 판정에서 제외
                             # (진단 카운터: 기존 코드라면 노이즈로 오판됐을 후보)
                             n_blocked_high_conc[idx] += 1
 
@@ -1079,14 +1074,13 @@ def step2_7_confounder_filtering_v4(cleaned_dfs, drc_ok_species, source_name="",
                     pred_with_metal[idx] += pred3[k]
                     pred_without_metal[idx] += pred2[k]
 
-                    # ---- C80 gate 원자료 (fold별 판정 검증용) ----
-                    # c80 = 해당 fold·TOC의 C80 (없으면 NaN)
-                    # below_c80 = 관측농도 < C80 여부 (fold별)
+                    # ---- C80 gate 원자료 (fold별 표준화 단일 C80, TOC=1% 고정) ----
+                    # c80_fold = 해당 fold의 단일 C80 (2-feature DRC, TOC=1.0 고정)
+                    # below_c80 = 관측농도 < C80_fold 여부 (fold별)
                     # fold_inconsistent_{cutoff} = 해당 fold에서 이상 판정 여부 (cutoff별)
-                    toc_k = float(X_te2[k, 1])
-                    c80_k = c80_cache.get(toc_k)  # 첫 루프에서 채워짐
                     conc_k = float(X_te2[k, 0])
                     surv_k = float(y_te[k])
+                    c80_k = c80_fold  # fold별 단일값 (TOC=1% 고정)
                     below_c80_k = (c80_k is not None) and (conc_k < c80_k)
                     fold_inconsistent_row = {}
                     for c in residual_cutoffs:
