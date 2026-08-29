@@ -3,6 +3,19 @@
 고도화 파이프라인 v5.3: OOF-SHAP 합의 Primary + R_NT 기여도 tier + 다중 POPs feature
 =====================================================
 
+★ v5.4 (2026-08-29, 사용자 확정): Primary 제외 논리를 R_NT 합의 → 2규칙(금속 ∪ 무귀속) 교체:
+      metal_flag  = (y_te < 80) & (shap3_metal < 0) & (|shap3_metal| > |shap3_target|)
+      unattr_flag = (y_te < 80) & (shap3_target > -0.1)
+      primary_excluded = (metal_flag_count >= 8) | (unattr_flag_count >= 8)
+  - survival = OOF test fold의 y_te 직접 사용 (Station×Species 평균 재조인 금지)
+  - SHAP 원천 = 3-feature Primary 모델 [target, mPELQ_Metals, TOC] TreeSHAP
+    (확장 모델은 sensitivity 전용 — corrected-original 유지)
+  - 집계 전 OOF 구조 단언: repeat_id 10종/레코드 · (record_id, repeat_id) 중복 0 ·
+    raw_rows 산출 위치 = test fold 배정 · NEDS 발화 0건
+  - 제외는 합집합이되 사유 필수 구분: unattr_only / metal_only / both / kept
+  - 무귀속 역치 -0.1 = 원본 R V11.7 EDS_SHAP_Threshold 그대로 이식 (튜닝 금지)
+  (v5.3 R_NT 합의는 sensitivity arm으로 유지 — 아래 v5.3 설계 문서 참조)
+
 [사용자 설계 (2026-08-28 확정)]
 1. TEL/PEL 신뢰도 향상
    - OOF-SHAP 합의 기반 비대상 화학물질 기여 판정 → 비대상 영향 EDS 제거 (Step 2.7)
@@ -57,6 +70,7 @@
 """
 import warnings
 import sys
+import os
 import math
 import numpy as np
 import pandas as pd
@@ -77,7 +91,9 @@ np.random.seed(42)
 # repo 구조: code/ (스크립트), data/ (입력), output/ (산출물)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
-OUTPUT_DIR = REPO_ROOT / "output"
+# ★ v5.4: PR 검증 중 release/output/ 덮어쓰기 방지 — 환경변수로 격리.
+#   미지정 시 기존 동작 유지 (기존 스크립트 호환).
+OUTPUT_DIR = Path(os.environ.get("POPS_OUTPUT_DIR", str(REPO_ROOT / "output")))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 NOAA_DB_PATH = DATA_DIR / "US_Sediment_Risk_Analytical_Set_Mainland.csv"
@@ -137,6 +153,11 @@ def load_config():
 
 # mPELQ threshold: 평균 중금속이 PEL의 50% 초과 → 타 독성 기여도 의심
 MPELQ_METALS_THRESHOLD = 0.5
+
+# ★ v5.4 Primary 2규칙 상수 (user 확정 — 사전확정값, 튜닝/완화 금지)
+# 무귀속(unattributed) SHAP 역치: 원본 R V11.7 sqg_empirical_xgboost_shap.py
+# L513-522의 EDS_SHAP_Threshold = -0.1을 그대로 이식.
+V54_UNATTR_SHAP_THRESHOLD = -0.1
 
 # 단위 변환: DB 원본 단위 → ng/g (µg/kg dw)
 UNIT_FACTOR = {
@@ -973,6 +994,21 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
             idx_other_pops + [idx_metal]
         ))  # other POPs (PAHs 포함) + mPELQ_Metals, 중복 없음
 
+        # =====================================================================
+        # ★ v5.4 Primary 3-feature 모델 (user 확정 — corrected-original)
+        #   [target concentration, mPELQ_Metals, TOC_pct] — 정확히 3-feature.
+        #   확장 모델(model3: other POPs·PAHs·species 포함)은 sensitivity 전용으로 유지하고
+        #   2규칙 판정 SHAP은 반드시 이 3-feature 모델에서 산출한다 (corrected-original 유지).
+        #   시험판 구현 문제 해결:
+        #     (1) survival을 Station×Species 평균으로 재조인하지 않고 fold의 y_te 직접 사용
+        #     (2) SHAP 원천 = 정확히 3-feature Primary 모델 (확장모델 SHAP 사용 금지)
+        #     (3) repeat 구조 단언(10/10·중복 0·test-fold 출처)을 집계 전에 강제
+        # =====================================================================
+        feature_names_3 = [f"{substance}_conc", "mPELQ_Metals", "TOC_pct"]
+        # core_mask_cols = [target_col, "mPELQ_Metals", "TOC_pct"] 순서와 동일 (위 valid_mask 산출에 사용됨)
+        X3_valid = core_X[valid_mask]
+        mono_3 = "(-1,-1,0)"  # target -1, mPELQ_Metals -1, TOC 0
+
         # ---- 반복 CV SHAP (OOF) ----
         # ★ v5: SHAP Primary 필터 (sign-aware joint 카운터)
         # target_toxic = shap_target < 0 (대상물질이 독성 방향으로 기여)
@@ -1027,6 +1063,12 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         n_inter_attempts = 0  # Interventional SHAP 시도 fold 수
         n_inter_success = 0   # Interventional SHAP 성공 fold 수
 
+        # ★ v5.4: Primary 2규칙(금속 우세 ∪ 무귀속) fold 카운터 + 3-feature SHAP 누적
+        metal_flag_count = np.zeros(n_total, dtype=int)   # metal_flag 발화 횟수 (OOF test fold)
+        unattr_flag_count = np.zeros(n_total, dtype=int)  # unattr_flag 발화 횟수 (OOF test fold)
+        shapP_target_sum = np.zeros(n_total, dtype=float) # 3-feature model target SHAP 평균용
+        shapP_metal_sum = np.zeros(n_total, dtype=float)  # 3-feature model metal SHAP 평균용
+
         for seed in repeat_seeds:
             if use_group_kfold:
                 # GroupKFold: 동일 station/sample cluster가 train/test에 중복되지 않도록 분할.
@@ -1074,6 +1116,19 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
                 model3 = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
                     "max_depth": 4, "seed": random_seed,
                     "monotone_constraints": mono_str}, dtr, num_boost_round=100)
+
+                # ★ v5.4: Primary 3-feature 모델 (target + mPELQ_Metals + TOC) 학습
+                #   2규칙 판정 SHAP의 유일 원천. 확장모델(model3)은 sensitivity 전용.
+                #   y_tr/y_te는 fold의 실제 관측 생존율 — 평균 재조인 없음 (구현 문제 #1 해결).
+                X3_tr, X3_te = X3_valid[train_idx], X3_valid[test_idx]
+                dtr3p = xgb.DMatrix(X3_tr, label=y_tr, feature_names=feature_names_3)
+                model3p = xgb.train({"objective": "reg:squarederror", "eta": 0.1,
+                    "max_depth": 4, "seed": random_seed,
+                    "monotone_constraints": mono_3}, dtr3p, num_boost_round=100)
+                dte3p = xgb.DMatrix(X3_te, feature_names=feature_names_3)
+                contribs_3p = model3p.predict(dte3p, pred_contribs=True)
+                shapP_target = contribs_3p[:, 0]   # target concentration SHAP (TreeSHAP)
+                shapP_metal = contribs_3p[:, 1]    # mPELQ_Metals SHAP (TreeSHAP)
 
                 # TreeSHAP (path-dependent, 기본) — 모든 feature의 SHAP 값 추출
                 dte = xgb.DMatrix(X_te, feature_names=feature_names)
@@ -1245,6 +1300,25 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
 
                 for k, idx in enumerate(test_idx):
                     n_assignments[idx] += 1
+
+                    # ---- ★ v5.4: 2규칙 fold 판정 (user 고정 로직 — 그대로) ----
+                    # survival은 fold의 y_te를 직접 사용 (평균 재조인 금지 — 구현 문제 #1)
+                    # SHAP은 3-feature Primary 모델(TreeSHAP) (구현 문제 #2 해결)
+                    metal_flag_k = (
+                        (y_te[k] < 80)
+                        & (shapP_metal[k] < 0)
+                        & (abs(shapP_metal[k]) > abs(shapP_target[k]))
+                    )
+                    unattr_flag_k = (
+                        (y_te[k] < 80)
+                        & (shapP_target[k] > V54_UNATTR_SHAP_THRESHOLD)
+                    )
+                    if metal_flag_k:
+                        metal_flag_count[idx] += 1
+                    if unattr_flag_k:
+                        unattr_flag_count[idx] += 1
+                    shapP_target_sum[idx] += float(shapP_target[k])
+                    shapP_metal_sum[idx] += float(shapP_metal[k])
 
                     # ---- TreeSHAP joint 판정 ----
                     tt = shap_target_tree[k] < 0  # target_toxic
@@ -1418,6 +1492,12 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
                         "below_c80": int(below_c80_k),
                         "pred_drc": pred2[k],
                         "residual_oof": resid_te[k],
+                        # ★ v5.4: 3-feature Primary SHAP + 2규칙 fold 판정 (y_te 직접 사용)
+                        "shap3_target": float(shapP_target[k]),
+                        "shap3_metal": float(shapP_metal[k]),
+                        "v54_metal_flag": int(metal_flag_k),
+                        "v54_unattr_flag": int(unattr_flag_k),
+                        "v54_y_te_survival": float(y_te[k]),  # fold 관측값 감사용
                     }
                     for c in residual_cutoffs:
                         row[f"fold_inconsistent_{c}"] = fold_inconsistent_row[c]
@@ -1444,6 +1524,38 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
                 normalized = tuple(sorted(seed_sigs[s]))
                 unique_seed_splits.add(normalized)
             n_unique_splits = len(unique_seed_splits)
+
+        # =====================================================================
+        # ★ v5.4 구현 문제 #3: OOF 반복 구조 단언 (행 개수가 아니라 구조를 검증)
+        #   (a) 레코드별 repeat_id 고유값이 정확히 n_seeds개
+        #   (b) 중복 (record_id, repeat_id) = 0건
+        #   (c) 모든 SHAP 원자료가 해당 repeat의 test fold에서 산출 (fold signature와
+        #       (repeat_id, fold_id, record_id) 삼중집합이 정확히 일치)
+        #   (d) NEDS(생존율>=80)에서 2규칙 발화 0건 — 별도 아래 판정 블록에서 단언
+        # =====================================================================
+        raw_check_df = pd.DataFrame(raw_rows) if raw_rows else pd.DataFrame(
+            columns=["record_id", "repeat_id", "fold_id"])
+        _reps_per_record = raw_check_df.groupby("record_id")["repeat_id"].nunique()
+        if not (_reps_per_record == n_seeds).all():
+            _bad = int((_reps_per_record != n_seeds).sum())
+            raise RuntimeError(
+                f"OOF 반복 단언 위반 (a): repeat_id 고유값 != {n_seeds}인 레코드 {_bad}건 "
+                f"({substance})")
+        _n_dup = int(raw_check_df.duplicated(subset=["record_id", "repeat_id"]).sum())
+        if _n_dup != 0:
+            raise RuntimeError(
+                f"OOF 반복 단언 위반 (b): 중복 (record_id, repeat_id) {_n_dup}건 ({substance})")
+        _sig_map = set()
+        if len(raw_rows) > 0:
+            for _fs in fold_signatures:
+                for _rid in _fs["test_record_ids"]:
+                    _sig_map.add((_fs["seed"], _fs["fold_id"], _rid))
+        _raw_triples = set(zip(raw_check_df["repeat_id"], raw_check_df["fold_id"],
+                               raw_check_df["record_id"]))
+        if _raw_triples != _sig_map:
+            raise RuntimeError(
+                f"OOF 출처 단언 위반 (c): raw_rows 산출 위치가 test fold 배정과 불일치 "
+                f"(raw={len(_raw_triples)} vs signature={len(_sig_map)} — {substance})")
 
         # ---- v5: 시료별 빈도 산출 (SHAP Primary 기반) ----
         target_unsup_freq_tree = np.divide(target_unsupported_tree, n_assignments,
@@ -1476,15 +1588,39 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         is_eds_raw = survival < 80
         is_neds = survival >= 80
 
-        # ★ v5.3 Primary 제외: R_NT 기여도 합의 (TreeSHAP ∩ Interventional)
-        #   R_NT = (pred_wo_nt − pred_full) / (80 − pred_full) ≥ 0.5 (과반 기여, 사전 확정)
-        #   구 c5(완전 회복, ≥1.0)는 Strict sensitivity로 이동 — Primary 정의 아님
+        # ★★★ v5.4 Primary: 2규칙 합의 (user 고정 로직 — 그대로 탑재, 조건 추가 금지) ★★★
+        #   fold별 카운터(metal_flag_count/unattr_flag_count)는 위 OOF 루프에서
+        #   y_te(해당 fold 관측 생존율)와 3-feature Primary 모델 TreeSHAP으로 이미 산출됨.
+        #   survival == y_te 동일성: 각 레코드는 fold test로 정확히 n_seeds번 등장하며
+        #   판정은 fold의 y_te로 수행 → 별도 평균 재조인 없음 (구현 문제 #1 해결).
+        #   min_success = ceil(stability_threshold × n_seeds) = 8/10 (v5.3 합의 mech 재사용).
+        #   유의: 무귀속 규칙 부호 — EDS 중 대상물질 SHAP이 역치(-0.1)보다 크면(귀속 약함) 제외.
+        metal_flag = metal_flag_count >= min_success          # 금속 우세 8/10 합의
+        unattr_flag = unattr_flag_count >= min_success        # 무귀속 8/10 합의
         primary_excluded = (
-            is_eds_raw
-            & (target_unsup_ratio_05_tree >= min_success)
-            & (target_unsup_ratio_05_inter >= min_success)
-            & (n_inter_assignments >= min_success)
-        )
+            metal_flag
+            | unattr_flag
+        )   # 최종 제외 = 합집합 (user 고정)
+
+        # ---- ★ v5.4 단언 (d): NEDS에서 2규칙 발화·제외 0건 ----
+        _neds_metal_fire = int((is_neds & (metal_flag_count > 0)).sum())
+        _neds_unattr_fire = int((is_neds & (unattr_flag_count > 0)).sum())
+        _neds_excluded = int((is_neds & primary_excluded).sum())
+        if _neds_metal_fire != 0 or _neds_unattr_fire != 0 or _neds_excluded != 0:
+            raise RuntimeError(
+                f"v5.4 NEDS 단언 위반 ({substance}): metal 발화 {_neds_metal_fire}, "
+                f"unattr 발화 {_neds_unattr_fire}, NEDS 제외 {_neds_excluded} — "
+                f"2규칙은 EDS(y_te<80)에서만 발화해야 함")
+
+        # ---- ★ v5.4 제외 사유 분리 (구현 문제 #4): 합집합이되 사유 구분 필수 ----
+        exclusion_reason = np.select(
+            [is_neds,
+             primary_excluded & metal_flag & unattr_flag,
+             primary_excluded & metal_flag & ~unattr_flag,
+             primary_excluded & ~metal_flag & unattr_flag],
+            ["NEDS", "both", "metal_only", "unattr_only"],
+            default="kept")
+
         primary_retained_eds = is_eds_raw & ~primary_excluded
 
         # ---- 안전장치: 제거율이 max_removal_rate 초과 시 (v5.2: all-or-none → 플래그) ----
@@ -1572,14 +1708,11 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         #   mPELQ 초과 EDS·NEDS 모두 제외되는 것이 구 Step 1과 동일한 동작이다.
         sens3_df = df_valid[df_valid["screen_pass_mpelq"].astype(bool)].reset_index(drop=True)
         sens4_eds = is_eds_raw  # Unfiltered: EDS 전부 유지 (SHAP 제외 없음)
-        # ★ 중첩성 검증 (사전 확정 원칙): 제외 집합은 Strict ⊆ Primary ⊆ Exploratory여야 함
-        n_nesting_violation = int(
-            (strict_excluded & ~primary_excluded).sum()
-            + (primary_excluded & ~exploratory_excluded).sum())
-        if n_nesting_violation != 0:
-            raise RuntimeError(
-                f"중첩성 위반: Strict⊆Primary⊆Exploratory 성립 실패 "
-                f"({n_nesting_violation}건) — 집계 로직 오류")
+        # ★ v5.4: R_NT tier 중첩성 검사(Strict⊆Primary⊆Exploratory)는 폐지 —
+        #   Primary가 2규칙으로 재정의됨에 따라 R_NT tier 집합과의 포함관계는 더 이상
+        #   설계 보장되지 않으며, Strict/Exploratory는 독립 sensitivity로 보고한다.
+        #   (사용자 고정 로직 — 조건 추가 금지 원칙에 따라 검사 의존 제거)
+        n_nesting_violation = 0  # 호환 유지용 (diag 컬럼 유지, 항상 0)
 
         # ---- Primary TEL/PEL (SHAP Primary 기반, primary_excluded 기준) ----
         primary_df = df_valid[primary_keep].reset_index(drop=True)
@@ -1659,10 +1792,15 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         n_ChemScreen_excluded_EDS = int((screen_fail & is_eds_raw).sum())
         n_ChemScreen_excluded_NEDS = int((screen_fail & is_neds).sum())
         # (removal_rate / applicability_pass / primary_excluded는 위에서 이미 정의됨 — 중복 정의 제거)
+        # ---- ★ v5.4 제외 사유 breakdown (구현 문제 #4: 결과 보고 시 사유 구분 필수) ----
+        n_excl_metal_only = int((exclusion_reason == "metal_only").sum())
+        n_excl_unattr_only = int((exclusion_reason == "unattr_only").sum())
+        n_excl_both = int((exclusion_reason == "both").sum())
         print(f"\n  {substance}: N={n_total}")
-        print(f"    Primary (R_NT≥0.5 과반 기여, TreeSHAP∩Interventional ≥{min_success}/{n_seeds}): "
+        print(f"    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥{min_success}/{n_seeds}): "
               f"EDS={n_eds_primary} NEDS={n_neds} "
               f"제외(합의)={n_excluded_primary_consensus} "
+              f"[metal_only={n_excl_metal_only} unattr_only={n_excl_unattr_only} both={n_excl_both}] "
               f"(제거율 {removal_rate:.1%}) → "
               f"TEL={primary_telpel['TEL']:.4f} PEL={primary_telpel['PEL']:.4f}" if primary_telpel else
               f"    Primary: TEL/PEL 계산 불가")
@@ -1700,6 +1838,16 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
             "N_target_attribution_unsupported_eds": n_target_attribution_unsupported_eds,
             "N_EDS_primary": n_eds_primary,
             "N_excluded_primary_consensus": n_excluded_primary_consensus,
+            # ★ v5.4: 2규칙 상세 (사유 분리 필수) + OOF 구조 단언 기록
+            "N_v54_excluded_metal_only": n_excl_metal_only,
+            "N_v54_excluded_unattr_only": n_excl_unattr_only,
+            "N_v54_excluded_both": n_excl_both,
+            "N_v54_metal_flag_consensus": int(metal_flag.sum()),
+            "N_v54_unattr_flag_consensus": int(unattr_flag.sum()),
+            "N_v54_neds_flag_violations": _neds_metal_fire + _neds_unattr_fire,
+            "v54_oof_repeat_assertions": "PASS",  # 위반 시 RuntimeError로 조기 중단됨
+            "v54_primary_shap_source": "3-feature [target, mPELQ_Metals, TOC] OOF TreeSHAP",
+            "v54_survival_source": "fold y_te (record-level, no averaging join)",
             # ★ v5.3: tier별 제외 건수(합의) + diagnostic(평균 TreeSHAP ratio) 분리
             "N_excluded_strict_consensus": n_excluded_strict_consensus,
             "N_excluded_exploratory_consensus": n_excluded_exploratory_consensus,
@@ -1782,6 +1930,16 @@ def step2_7_confounder_filtering_v5(cleaned_dfs, selected_species, source_name="
         drc_resid_df["primary_excluded"] = primary_excluded.astype(int)
         drc_resid_df["applicability_pass"] = int(applicability_pass)
         drc_resid_df["is_eds_raw"] = is_eds_raw.astype(int)
+        # ★ v5.4: 2규칙 상세 — 사유 분리(unattr_only/metal_only/both/kept) + 판정 원자료
+        drc_resid_df["exclusion_reason"] = exclusion_reason
+        drc_resid_df["metal_flag_count"] = metal_flag_count
+        drc_resid_df["unattr_flag_count"] = unattr_flag_count
+        drc_resid_df["shap3_target_mean"] = np.divide(
+            shapP_target_sum, n_assignments,
+            out=np.full(n_total, np.nan), where=n_assignments > 0)
+        drc_resid_df["shap3_metal_mean"] = np.divide(
+            shapP_metal_sum, n_assignments,
+            out=np.full(n_total, np.nan), where=n_assignments > 0)
         # ★ v5.2: sensitivity ratio (contribution_ratio) per-sample
         drc_resid_df["pred_full_OOF_mean"] = pred_full_mean
         drc_resid_df["ntt_sum_OOF_mean"] = ntt_sum_mean
@@ -2088,11 +2246,11 @@ def main():
         or group_cfg.get("enabled", True)  # 기본값 True: config가 없어도 GroupKFold 사용
     )
     print("=" * 70)
-    print("고도화 파이프라인 v5.3: R_NT 기여도 Primary (mPELQ 하드 제외 → sensitivity)")
+    print("고도화 파이프라인 v5.4: 2규칙 Primary (금속우세 ∪ 무귀속, 3-feature OOF TreeSHAP)")
     print("  Step 1: DB 정제 (금속 QA; mPELQ≤0.5는 Chemical-screen sensitivity로 이동) + PAHs Sum 계산")
     print("  Step 2: XGBoost SHAP 종 선별")
     print("  Step 2.5: DRC 평가 → 종 선별 (DRC는 진단 전용, Primary 선별에 관여 안 함)")
-    print("  Step 2.7: SHAP Primary (R_NT≥0.5 과반 기여, Tree∩Inter 합의) + DRC 보조진단")
+    print("  Step 2.7: v5.4 2규칙 Primary (y_te + 3-feature TreeSHAP, 합의 8/10) + DRC 보조진단")
     print("  Step 3: EDS/NEDS → TEL/PEL")
     print("  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC, GroupKFold)")
     if diagnose_mode:

@@ -1,0 +1,10 @@
+Source,Substance,Total_N,N_EDS,N_NEDS,N_Selected_Species,Selected_Species,Our_TEL_OC1pct,Our_PEL_OC1pct,CCME_ISQG,CCME_PEL,NOAA_TEL,NOAA_PEL
+NOAA,DDTs,4856,949,3907,6,Ampelisca abdita; Rhepoxynius abronius; Strongylocentrotus purpuratus; Dendraster excentricus; Arbacia punctulata; Haliotis rufescens,4.6162,19.8269,1.19,4.77,3.89,51.7
+NOAA,CHLs,3541,335,3206,4,Ampelisca abdita; Leptocheirus plumulosus; Arbacia punctulata; Mytilus edulis,4.4208,22.2445,2.26,4.79,2.26,4.79
+NOAA,PCBs,4004,478,3526,5,Ampelisca abdita; Rhepoxynius abronius; Strongylocentrotus purpuratus; Arbacia punctulata; Haliotis rufescens,11.3198,48.897,21.5,189.0,22.7,180.0
+SCCWRP,DDTs,515,230,285,3,Strongylocentrotus purpuratus; Haliotis rufescens; Arbacia punctulata,10.527,51.3136,1.19,4.77,3.89,51.7
+SCCWRP,CHLs,479,158,321,2,Eohaustorius estuarius; Haliotis rufescens,5.3559,17.5626,2.26,4.79,2.26,4.79
+SCCWRP,PCBs,183,82,101,1,Arbacia punctulata,9.6746,19.5866,21.5,189.0,22.7,180.0
+Integrated,DDTs,5487,1039,4448,5,Ampelisca abdita; Strongylocentrotus purpuratus; Dendraster excentricus; Arbacia punctulata; Haliotis rufescens,5.7861,20.8765,1.19,4.77,3.89,51.7
+Integrated,CHLs,5057,704,4353,5,Ampelisca abdita; Leptocheirus plumulosus; Strongylocentrotus purpuratus; Arbacia punctulata; Haliotis rufescens,4.3342,16.9249,2.26,4.79,2.26,4.79
+Integrated,PCBs,4930,839,4091,4,Ampelisca abdita; Strongylocentrotus purpuratus; Arbacia punctulata; Haliotis rufescens,14.7016,56.6121,21.5,189.0,22.7,180.0

@@ -1,0 +1,37 @@
+[PASS] A1 compile run_pipeline_v5.py
+[PASS] A1 compile bootstrap_tel_pel_ci.py
+[PASS] B1 config schema v5.4
+[PASS] A2 committed config == disk
+[PASS] C anchor metal_flag_count >= min_success
+[PASS] C anchor unattr_flag_count >= min_success
+[PASS] C anchor exclusion_reason
+[PASS] C anchor shapP_target
+[PASS] C anchor V54_UNATTR_SHAP_THRESHOLD
+[PASS] C anchor POPS_OUTPUT_DIR
+[PASS] C anchor OOF 반복 단언 위반
+[PASS] C anchor NEDS 단언 위반
+[PASS] C anchor abs(shapP_metal[k]) > abs(shapP_targ
+[PASS] D1 DDTs reason↔flags 재계산 일치
+[PASS] D2 DDTs 합집합 판정 정합
+[PASS] D3 DDTs NEDS 발화·제외 0
+[PASS] D4 DDTs kept = 두 규칙 모두 8 미달
+[PASS] D1 CHLs reason↔flags 재계산 일치
+[PASS] D2 CHLs 합집합 판정 정합
+[PASS] D3 CHLs NEDS 발화·제외 0
+[PASS] D4 CHLs kept = 두 규칙 모두 8 미달
+[PASS] D1 PCBs reason↔flags 재계산 일치
+[PASS] D2 PCBs 합집합 판정 정합
+[PASS] D3 PCBs NEDS 발화·제외 0
+[PASS] D4 PCBs kept = 두 규칙 모두 8 미달
+[PASS] E1 raw fold 합 == metal_flag_count
+[PASS] E2 raw fold 합 == unattr_flag_count
+[PASS] E3 survival==mean(y_te) — 평균 join 부재
+[PASS] E4 repeat 10/레코드
+[PASS] E5 (record_id,repeat_id) 중복 0
+[PASS] F1 bootstrap 9조합·CI 정합
+[PASS] F2 bootstrap point == Primary — max|ΔTEL|=0.0000
+[PASS] G release/output 무수정 — newest=08-28 14:32
+[PASS] H 브랜치·커밋·dirty — v54-two-rule-integration@51b60f2 dirty=none
+
+==============================================================
+AD-HOC RESULT: ALL_PASS
