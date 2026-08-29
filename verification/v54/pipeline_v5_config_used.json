@@ -1,0 +1,64 @@
+{
+  "pipeline_version": "v5.4",
+  "primary_filter": "v5.4 two-rule consensus (metal-dominant OR unattributed EDS), OOF y_te + 3-feature TreeSHAP",
+  "v54_rules": {
+    "metal_flag": "(y_te < 80) & (shap3_metal < 0) & (abs(shap3_metal) > abs(shap3_target))",
+    "unattr_flag": "(y_te < 80) & (shap3_target > -0.1)",
+    "primary_excluded": "(metal_flag_count >= 8) | (unattr_flag_count >= 8)",
+    "unattr_shap_threshold": -0.1,
+    "unattr_threshold_source": "original R V11.7 sqg_empirical_xgboost_shap.py L513-522 EDS_SHAP_Threshold (transplanted verbatim, no tuning)",
+    "primary_shap_source": "3-feature Primary model [target concentration, mPELQ_Metals, TOC_pct], TreeSHAP on OOF test folds",
+    "survival_source": "OOF test-fold y_te (record-level; averaging joins prohibited)",
+    "exclusion_reason_required": ["unattr_only", "metal_only", "both", "kept"]
+  },
+  "primary_feature_model": {
+    "features": ["target_conc", "mPELQ_Metals", "TOC_pct"],
+    "expanded_model_role": "sensitivity-only",
+    "oof_structure_assertions": [
+      "record-wise repeat_id unique count == n_repeats",
+      "zero duplicate (record_id, repeat_id)",
+      "all SHAP produced in matching test fold (fold-signature triple match)",
+      "zero rule fires on NEDS (survival >= 80)"
+    ]
+  },
+  "ratio_tier_strict": 1.0,
+  "ratio_tier_primary": 0.5,
+  "ratio_tier_exploratory": 0.25,
+  "ratio_tier_role": "sensitivity-only (no longer Primary after v5.4)",
+  "mpelq_screen_role": "chemical-screen-only sensitivity",
+  "random_seed": 42,
+  "repeat_seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  "n_folds": 5,
+  "n_repeats": 10,
+  "stability_threshold": 0.80,
+  "dominance_ratio": 1.0,
+  "residual_cutoff": 0.05,
+  "residual_cutoffs": [0.025, 0.05, 0.10],
+  "max_removal_rate": 0.15,
+  "interventional_background_sampling": "full_training_fold",
+  "mpelq_metals_threshold": 0.5,
+  "min_metals_measured": 3,
+  "anchor_species_sensitivity": {
+    "enabled": true,
+    "species": ["Leptocheirus plumulosus"],
+    "substances": ["DDTs", "PCBs"]
+  },
+  "mpelq_sensitivity_cutoffs": [0.25, 0.5, 1.0],
+  "bootstrap_n_iterations": 2000,
+  "bootstrap_random_seed": 42,
+  "bootstrap_ci_level": 0.95,
+  "bootstrap_cluster_col_priority": ["station_key", "StudyID+Station", "sample_key", "SampleID", "Start_Latitude+Start_Longitude(round4)", "record_id"],
+  "group_kfold": {
+    "enabled": true,
+    "group_col_priority": ["station_key", "StudyID+Station", "sample_key", "SampleID", "Start_Latitude+Start_Longitude(round4)", "record_id"],
+    "n_splits": 5
+  },
+  "package_versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.2.0",
+    "shap": "0.51.0"
+  }
+}

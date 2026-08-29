@@ -1,0 +1,59 @@
+/tmp/hermes-verify-v54-empirical.py:31: DtypeWarning: Columns (0: Month) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:31: DtypeWarning: Columns (0: Month) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:31: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:31: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:31: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:44: DtypeWarning: Columns (0: Month) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:44: DtypeWarning: Columns (0: Month) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:44: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:44: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:44: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(f"/tmp/pops_v54_output/Step2_7v5_DRC_Residual_{s}_{sub}.csv")
+/tmp/hermes-verify-v54-empirical.py:66: DtypeWarning: Columns (0: Month, 1: SampleID, 2: StationID, 3: station_key, 4: StudyID, 5: Date, 6: sample_key) have mixed types. Specify dtype option on import or set low_memory=False.
+  d = pd.read_csv("/tmp/pops_v54_output/Step2_7v5_DRC_Residual_Integrated_DDTs.csv")
+=== 1. 제외사유 분리 (unattr_only/metal_only/both/kept, NEDS 포함 시 NEDS로) ===
+  [PASS] NOAA/DDTs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] NOAA/CHLs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] NOAA/PCBs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] SCCWRP/DDTs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] SCCWRP/CHLs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] SCCWRP/PCBs: reasons=['NEDS', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] Integrated/DDTs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] Integrated/CHLs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+  [PASS] Integrated/PCBs: reasons=['NEDS', 'both', 'kept', 'metal_only', 'unattr_only'] metal_only 중 unattr≥8 오분류=0
+
+=== 2. NEDS 제외 0건 + 무귀속/금속 발화 EDS 한정 ===
+  [PASS] NOAA/DDTs: NEDS 발화·제외 0건
+  [PASS] NOAA/CHLs: NEDS 발화·제외 0건
+  [PASS] NOAA/PCBs: NEDS 발화·제외 0건
+  [PASS] SCCWRP/DDTs: NEDS 발화·제외 0건
+  [PASS] SCCWRP/CHLs: NEDS 발화·제외 0건
+  [PASS] SCCWRP/PCBs: NEDS 발화·제외 0건
+  [PASS] Integrated/DDTs: NEDS 발화·제외 0건
+  [PASS] Integrated/CHLs: NEDS 발화·제외 0건
+  [PASS] Integrated/PCBs: NEDS 발화·제외 0건
+
+=== 3. OOF 반복 구조 (repeat_id 10종 / 중복 0 / y_te 일치) ===
+  [PASS] Integrated/DDTs: dup=0, repeat_min=10, repeat_max=10
+  [PASS] Integrated/CHLs: dup=0, repeat_min=10, repeat_max=10
+  [PASS] Integrated/PCBs: dup=0, repeat_min=10, repeat_max=10
+
+=== 4. y_te 사용 감사: OOF 평균 y_te == df survival (평균 재조인 없음 실증) ===
+  [PASS] Integrated/DDTs: |survival - mean(y_te)|max = 7.11e-15
+
+=== 5. 제외 EDS 농도 vs 유지 EDS (저농도 집중 메커니즘) ===
+  [PASS] Integrated/DDTs: 제외 EDS 중앙값 3.775 < 유지 EDS 19.589 µg/kg
+  [PASS] Integrated/CHLs: 제외 EDS 중앙값 2.338 < 유지 EDS 12.065 µg/kg
+  [PASS] Integrated/PCBs: 제외 EDS 중앙값 9.671 < 유지 EDS 50.358 µg/kg
+
+============================================================
+RESULT: ALL_PASS

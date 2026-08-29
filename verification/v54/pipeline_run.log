@@ -1,0 +1,479 @@
+======================================================================
+고도화 파이프라인 v5.4: 2규칙 Primary (금속우세 ∪ 무귀속, 3-feature OOF TreeSHAP)
+  Step 1: DB 정제 (금속 QA; mPELQ≤0.5는 Chemical-screen sensitivity로 이동) + PAHs Sum 계산
+  Step 2: XGBoost SHAP 종 선별
+  Step 2.5: DRC 평가 → 종 선별 (DRC는 진단 전용, Primary 선별에 관여 안 함)
+  Step 2.7: v5.4 2규칙 Primary (y_te + 3-feature TreeSHAP, 합의 8/10) + DRC 보조진단
+  Step 3: EDS/NEDS → TEL/PEL
+  Step 4: 신뢰도 평가 (기준 비교 + ROC-AUC, GroupKFold)
+======================================================================
+
+######################################################################
+# 소스: NOAA — US_Sediment_Risk_Analytical_Set_Mainland.csv
+######################################################################
+  로딩: 14,433행
+
+======================================================================
+[Step 1] DB 정제 — NOAA
+======================================================================
+[1-1] 원본: 14,433행 × 279컬럼
+[1-2] 기본 필터 후: 11,877행
+[1-3] 생물종 정제 후: 11,783행, 종 수: 32
+  DDTs: 유효 9,040지점
+  CHLs: 유효 7,854지점
+  PCBs: 유효 7,919지점
+  PAHs: 유효 9,509지점
+  DDTs: 금속 QA 제거 129 → 최종 8,911지점 (mPELQ<=0.5 초과 2335지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  CHLs: 금속 QA 제거 39 → 최종 7,815지점 (mPELQ<=0.5 초과 2010지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  PCBs: 금속 QA 제거 349 → 최종 7,570지점 (mPELQ<=0.5 초과 1957지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+
+======================================================================
+[Step 2] XGBoost OOF SHAP 종 선별 — NOAA
+  (종별 5-fold × 10회 GroupKFold OOF SHAP, 8/10회 충족 시 OOF-supported)
+======================================================================
+선택된 종 (OOF-supported): 15종
+
+======================================================================
+[Step 2.5] DRC 품질 평가 → 종 선별 (DRC 진단 전용) — NOAA
+======================================================================
+
+--- DDTs (N=5496, 후보 6종) ---
+  ✓ Ampelisca abdita                    | N= 3477 R²=0.050 slope=-6.975 lowTox=0.08
+  ✓ Rhepoxynius abronius                | N=  408 R²=0.077 slope=-7.155 lowTox=0.62
+  ✓ Strongylocentrotus purpuratus       | N= 1223 R²=0.040 slope=-7.793 lowTox=0.36
+  ✓ Dendraster excentricus              | N=   49 R²=0.086 slope=-17.464 lowTox=0.69
+  ✓ Arbacia punctulata                  | N=  285 R²=0.080 slope=-8.010 lowTox=0.26
+  ✓ Haliotis rufescens                  | N=   54 R²=0.136 slope=-15.690 lowTox=0.57
+
+--- CHLs (N=4001, 후보 4종) ---
+  ✓ Ampelisca abdita                    | N= 3418 R²=0.015 slope=-3.427 lowTox=0.09
+  ✓ Leptocheirus plumulosus             | N=  254 R²=0.217 slope=-34.011 lowTox=0.30
+  ✓ Arbacia punctulata                  | N=  285 R²=0.009 slope=-2.385 lowTox=0.54
+  ✓ Mytilus edulis                      | N=   44 R²=0.046 slope=-2.702 lowTox=0.09
+
+--- PCBs (N=4831, 후보 5종) ---
+  ✓ Ampelisca abdita                    | N= 3383 R²=0.069 slope=-5.884 lowTox=0.07
+  ✓ Rhepoxynius abronius                | N=  116 R²=0.138 slope=-16.098 lowTox=0.41
+  ✓ Strongylocentrotus purpuratus       | N= 1000 R²=0.028 slope=-6.421 lowTox=0.43
+  ✓ Arbacia punctulata                  | N=  285 R²=0.064 slope=-6.762 lowTox=0.33
+  ✓ Haliotis rufescens                  | N=   47 R²=0.033 slope=-14.582 lowTox=0.83
+
+[Step 2.5 요약]
+  DRC OK: 15종 / 불량: 0종 / 총 15종 조합
+  종 선별: OOF-SHAP 합의 기준 (DRC는 진단 전용 — 불량 종도 Primary 유지)
+  가짜 독성 DROP: 중단됨 (Primary는 survival 기준 EDS 전부 포함, 민감도 분석으로 이동)
+  물질별 선별 종: {'DDTs': ['Ampelisca abdita', 'Rhepoxynius abronius', 'Strongylocentrotus purpuratus', 'Dendraster excentricus', 'Arbacia punctulata', 'Haliotis rufescens'], 'CHLs': ['Ampelisca abdita', 'Leptocheirus plumulosus', 'Arbacia punctulata', 'Mytilus edulis'], 'PCBs': ['Ampelisca abdita', 'Rhepoxynius abronius', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens']}
+
+======================================================================
+[Step 2.7-v5.3] SHAP Primary + DRC 보조진단 — NOAA
+======================================================================
+
+  DDTs: N=5496
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=949 NEDS=3907 제외(합의)=640 [metal_only=268 unattr_only=335 both=37] (제거율 40.3%) → TEL=4.6162 PEL=19.8269
+    ⚠️ 제거율 40.3% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 437 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 96건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 2192 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 -0.0029 (음수 2656 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=288 Primary/R_NT≥0.5=682 Exploratory/R_NT≥0.25=1151 (평균 ratio=0.508)
+    C80 gate 검증(DRC 보조): 후보 96건 중 fold별 below_c80≥8회 96 / 미달 0 (유효 C80 기록 5496건)
+    DRC 후보 농도 중앙값 2.0608 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 3.3585 vs 유지 EDS 17.7844 µg/kg (1% TOC 정규화)
+
+  CHLs: N=4001
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=335 NEDS=3206 제외(합의)=460 [metal_only=144 unattr_only=143 both=173] (제거율 57.9%) → TEL=4.4208 PEL=22.2445
+    ⚠️ 제거율 57.9% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 50 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 111건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 2066 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0128 (음수 1938 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=248 Primary/R_NT≥0.5=356 Exploratory/R_NT≥0.25=501 (평균 ratio=0.431)
+    C80 gate 검증(DRC 보조): 후보 111건 중 fold별 below_c80≥8회 111 / 미달 0 (유효 C80 기록 4001건)
+    DRC 후보 농도 중앙값 3.7272 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 1.7572 vs 유지 EDS 18.6111 µg/kg (1% TOC 정규화)
+
+  PCBs: N=4831
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=478 NEDS=3526 제외(합의)=827 [metal_only=461 unattr_only=193 both=173] (제거율 63.4%) → TEL=11.3198 PEL=48.8970
+    ⚠️ 제거율 63.4% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 324 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 92건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 3008 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0193 (음수 2384 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=287 Primary/R_NT≥0.5=729 Exploratory/R_NT≥0.25=1167 (평균 ratio=0.673)
+    C80 gate 검증(DRC 보조): 후보 92건 중 fold별 below_c80≥8회 92 / 미달 0 (유효 C80 기록 4831건)
+    DRC 후보 농도 중앙값 7.7092 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 17.2235 vs 유지 EDS 38.2921 µg/kg (1% TOC 정규화)
+
+======================================================================
+[Step 3] EDS/NEDS → TEL/PEL — NOAA
+======================================================================
+
+▶ DDTs (N=4856, 선별 6종: ['Ampelisca abdita', 'Rhepoxynius abronius', 'Strongylocentrotus purpuratus', 'Dendraster excentricus', 'Arbacia punctulata', 'Haliotis rufescens'])
+  EDS: 949, NEDS: 3907
+  TEL = 4.6162, PEL = 19.8269  (CCME: 1.19/4.77)
+
+▶ CHLs (N=3541, 선별 4종: ['Ampelisca abdita', 'Leptocheirus plumulosus', 'Arbacia punctulata', 'Mytilus edulis'])
+  EDS: 335, NEDS: 3206
+  TEL = 4.4208, PEL = 22.2445  (CCME: 2.26/4.79)
+
+▶ PCBs (N=4004, 선별 5종: ['Ampelisca abdita', 'Rhepoxynius abronius', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens'])
+  EDS: 478, NEDS: 3526
+  TEL = 11.3198, PEL = 48.8970  (CCME: 21.5/189)
+
+======================================================================
+[Step 4] 신뢰도 평가 — NOAA
+======================================================================
+
+  DDTs:
+    TEL=4.62 (CCME 1.19, 비율 3.88x)
+    PEL=19.83 (CCME 4.77, 비율 4.16x)
+    ROC-AUC=0.807, CV-AUC=0.817±0.010
+    TEL 민감도=0.93, 특이도=0.57
+
+  CHLs:
+    TEL=4.42 (CCME 2.26, 비율 1.96x)
+    PEL=22.24 (CCME 4.79, 비율 4.64x)
+    ROC-AUC=0.779, CV-AUC=0.781±0.015
+    TEL 민감도=0.91, 특이도=0.54
+
+  PCBs:
+    TEL=11.32 (CCME 21.5, 비율 0.53x)
+    PEL=48.90 (CCME 189.0, 비율 0.26x)
+    ROC-AUC=0.764, CV-AUC=0.768±0.026
+    TEL 민감도=0.92, 특이도=0.56
+
+######################################################################
+# 소스: SCCWRP — sccwrp_noaa_compatible.csv
+######################################################################
+  로딩: 6,207행
+
+======================================================================
+[Step 1] DB 정제 — SCCWRP
+======================================================================
+[1-1] 원본: 6,207행 × 289컬럼
+[1-2] 기본 필터 후: 5,407행
+[1-3] 생물종 정제 후: 5,386행, 종 수: 25
+  DDTs: 유효 4,286지점
+  CHLs: 유효 3,067지점
+  PCBs: 유효 3,196지점
+  PAHs: 유효 4,363지점
+  DDTs: 금속 QA 제거 82 → 최종 4,204지점 (mPELQ<=0.5 초과 1662지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  CHLs: 금속 QA 제거 56 → 최종 3,011지점 (mPELQ<=0.5 초과 1293지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  PCBs: 금속 QA 제거 196 → 최종 3,000지점 (mPELQ<=0.5 초과 1352지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+
+======================================================================
+[Step 2] XGBoost OOF SHAP 종 선별 — SCCWRP
+  (종별 5-fold × 10회 GroupKFold OOF SHAP, 8/10회 충족 시 OOF-supported)
+======================================================================
+선택된 종 (OOF-supported): 6종
+
+======================================================================
+[Step 2.5] DRC 품질 평가 → 종 선별 (DRC 진단 전용) — SCCWRP
+======================================================================
+
+--- DDTs (N=707, 후보 3종) ---
+  ✓ Strongylocentrotus purpuratus       | N=  357 R²=0.020 slope=-8.202 lowTox=0.61
+  ✓ Haliotis rufescens                  | N=  132 R²=0.135 slope=-19.535 lowTox=0.15
+  ✓ Arbacia punctulata                  | N=  218 R²=0.042 slope=-10.201 lowTox=0.45
+
+--- CHLs (N=680, 후보 2종) ---
+  ✓ Eohaustorius estuarius              | N=  548 R²=0.028 slope=-7.081 lowTox=0.64
+  ✓ Haliotis rufescens                  | N=  132 R²=0.065 slope=-26.798 lowTox=0.36
+
+--- PCBs (N=218, 후보 1종) ---
+  ✓ Arbacia punctulata                  | N=  218 R²=0.061 slope=-11.135 lowTox=0.42
+
+[Step 2.5 요약]
+  DRC OK: 6종 / 불량: 0종 / 총 6종 조합
+  종 선별: OOF-SHAP 합의 기준 (DRC는 진단 전용 — 불량 종도 Primary 유지)
+  가짜 독성 DROP: 중단됨 (Primary는 survival 기준 EDS 전부 포함, 민감도 분석으로 이동)
+  물질별 선별 종: {'DDTs': ['Strongylocentrotus purpuratus', 'Haliotis rufescens', 'Arbacia punctulata'], 'CHLs': ['Eohaustorius estuarius', 'Haliotis rufescens'], 'PCBs': ['Arbacia punctulata']}
+
+======================================================================
+[Step 2.7-v5.3] SHAP Primary + DRC 보조진단 — SCCWRP
+======================================================================
+
+  DDTs: N=707
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=230 NEDS=285 제외(합의)=192 [metal_only=13 unattr_only=178 both=1] (제거율 45.5%) → TEL=10.5270 PEL=51.3136
+    ⚠️ 제거율 45.5% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 75 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 0건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 327 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0380 (음수 317 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=21 Primary/R_NT≥0.5=78 Exploratory/R_NT≥0.25=239 (평균 ratio=0.317)
+    C80 gate 검증(DRC 보조): 후보 0건 중 fold별 below_c80≥8회 0 / 미달 0 (유효 C80 기록 707건)
+    DRC 후보 농도 중앙값 nan µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 6.3050 vs 유지 EDS 45.3397 µg/kg (1% TOC 정규화)
+
+  CHLs: N=680
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=158 NEDS=321 제외(합의)=201 [metal_only=19 unattr_only=164 both=18] (제거율 56.0%) → TEL=5.3559 PEL=17.5626
+    ⚠️ 제거율 56.0% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 44 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 1건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 247 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0224 (음수 381 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=64 Primary/R_NT≥0.5=144 Exploratory/R_NT≥0.25=270 (평균 ratio=0.762)
+    C80 gate 검증(DRC 보조): 후보 1건 중 fold별 below_c80≥8회 1 / 미달 0 (유효 C80 기록 680건)
+    DRC 후보 농도 중앙값 0.3295 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 1.5189 vs 유지 EDS 20.2219 µg/kg (1% TOC 정규화)
+
+  PCBs: N=218
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=82 NEDS=101 제외(합의)=35 [metal_only=5 unattr_only=30 both=0] (제거율 29.9%) → TEL=9.6746 PEL=19.5866
+    ⚠️ 제거율 29.9% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 18 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 0건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 108 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0242 (음수 106 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=20 Primary/R_NT≥0.5=52 Exploratory/R_NT≥0.25=108 (평균 ratio=0.827)
+    C80 gate 검증(DRC 보조): 후보 0건 중 fold별 below_c80≥8회 0 / 미달 0 (유효 C80 기록 218건)
+    DRC 후보 농도 중앙값 nan µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 5.5976 vs 유지 EDS 18.7768 µg/kg (1% TOC 정규화)
+
+======================================================================
+[Step 3] EDS/NEDS → TEL/PEL — SCCWRP
+======================================================================
+
+▶ DDTs (N=515, 선별 3종: ['Strongylocentrotus purpuratus', 'Haliotis rufescens', 'Arbacia punctulata'])
+  EDS: 230, NEDS: 285
+  TEL = 10.5270, PEL = 51.3136  (CCME: 1.19/4.77)
+
+▶ CHLs (N=479, 선별 2종: ['Eohaustorius estuarius', 'Haliotis rufescens'])
+  EDS: 158, NEDS: 321
+  TEL = 5.3559, PEL = 17.5626  (CCME: 2.26/4.79)
+
+▶ PCBs (N=183, 선별 1종: ['Arbacia punctulata'])
+  EDS: 82, NEDS: 101
+  TEL = 9.6746, PEL = 19.5866  (CCME: 21.5/189)
+
+======================================================================
+[Step 4] 신뢰도 평가 — SCCWRP
+======================================================================
+
+  DDTs:
+    TEL=10.53 (CCME 1.19, 비율 8.85x)
+    PEL=51.31 (CCME 4.77, 비율 10.76x)
+    ROC-AUC=0.810, CV-AUC=0.795±0.032
+    TEL 민감도=1.00, 특이도=0.63
+
+  CHLs:
+    TEL=5.36 (CCME 2.26, 비율 2.37x)
+    PEL=17.56 (CCME 4.79, 비율 3.67x)
+    ROC-AUC=0.863, CV-AUC=0.884±0.019
+    TEL 민감도=0.97, 특이도=0.67
+
+  PCBs:
+    TEL=9.67 (CCME 21.5, 비율 0.45x)
+    PEL=19.59 (CCME 189.0, 비율 0.10x)
+    ROC-AUC=0.790, CV-AUC=0.805±0.066
+    TEL 민감도=0.90, 특이도=0.54
+
+######################################################################
+# 소스: Integrated — integrated_matching_db_v2.csv
+######################################################################
+  로딩: 20,640행
+
+======================================================================
+[Step 1] DB 정제 — Integrated
+======================================================================
+[1-1] 원본: 20,640행 × 289컬럼
+[1-2] 기본 필터 후: 17,284행
+[1-3] 생물종 정제 후: 17,169행, 종 수: 38
+  DDTs: 유효 13,326지점
+  CHLs: 유효 10,921지점
+  PCBs: 유효 11,115지점
+  PAHs: 유효 13,872지점
+  DDTs: 금속 QA 제거 211 → 최종 13,115지점 (mPELQ<=0.5 초과 3997지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  CHLs: 금속 QA 제거 95 → 최종 10,826지점 (mPELQ<=0.5 초과 3303지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+  PCBs: 금속 QA 제거 545 → 최종 10,570지점 (mPELQ<=0.5 초과 3309지점은 Primary 유지, Chemical-screen sensitivity에서 분리)
+
+======================================================================
+[Step 2] XGBoost OOF SHAP 종 선별 — Integrated
+  (종별 5-fold × 10회 GroupKFold OOF SHAP, 8/10회 충족 시 OOF-supported)
+======================================================================
+선택된 종 (OOF-supported): 14종
+
+======================================================================
+[Step 2.5] DRC 품질 평가 → 종 선별 (DRC 진단 전용) — Integrated
+======================================================================
+
+--- DDTs (N=6268, 후보 5종) ---
+  ✓ Ampelisca abdita                    | N= 3943 R²=0.042 slope=-6.322 lowTox=0.08
+  ✓ Strongylocentrotus purpuratus       | N= 1580 R²=0.051 slope=-10.580 lowTox=0.41
+  ✓ Dendraster excentricus              | N=   56 R²=0.020 slope=-9.086 lowTox=0.86
+  ✓ Arbacia punctulata                  | N=  503 R²=0.060 slope=-8.791 lowTox=0.37
+  ✓ Haliotis rufescens                  | N=  186 R²=0.161 slope=-20.601 lowTox=0.26
+
+--- CHLs (N=6048, 후보 5종) ---
+  ✓ Ampelisca abdita                    | N= 3790 R²=0.012 slope=-2.978 lowTox=0.08
+  ✓ Leptocheirus plumulosus             | N=  254 R²=0.216 slope=-33.979 lowTox=0.30
+  ✓ Strongylocentrotus purpuratus       | N= 1347 R²=0.001 slope=-1.817 lowTox=0.57
+  ✓ Arbacia punctulata                  | N=  503 R²=0.017 slope=-3.896 lowTox=0.50
+  ✓ Haliotis rufescens                  | N=  154 R²=0.058 slope=-24.683 lowTox=0.41
+
+--- PCBs (N=5754, 후보 4종) ---
+  ✓ Ampelisca abdita                    | N= 3685 R²=0.065 slope=-5.792 lowTox=0.07
+  ✓ Strongylocentrotus purpuratus       | N= 1387 R²=0.012 slope=-5.442 lowTox=0.46
+  ✓ Arbacia punctulata                  | N=  503 R²=0.059 slope=-8.156 lowTox=0.40
+  ✓ Haliotis rufescens                  | N=  179 R²=0.009 slope=-9.442 lowTox=0.42
+
+[Step 2.5 요약]
+  DRC OK: 14종 / 불량: 0종 / 총 14종 조합
+  종 선별: OOF-SHAP 합의 기준 (DRC는 진단 전용 — 불량 종도 Primary 유지)
+  가짜 독성 DROP: 중단됨 (Primary는 survival 기준 EDS 전부 포함, 민감도 분석으로 이동)
+  물질별 선별 종: {'DDTs': ['Ampelisca abdita', 'Strongylocentrotus purpuratus', 'Dendraster excentricus', 'Arbacia punctulata', 'Haliotis rufescens'], 'CHLs': ['Ampelisca abdita', 'Leptocheirus plumulosus', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens'], 'PCBs': ['Ampelisca abdita', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens']}
+
+======================================================================
+[Step 2.7-v5.3] SHAP Primary + DRC 보조진단 — Integrated
+======================================================================
+
+  DDTs: N=6268
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=1039 NEDS=4448 제외(합의)=781 [metal_only=166 unattr_only=479 both=136] (제거율 42.9%) → TEL=5.7861 PEL=20.8765
+    ⚠️ 제거율 42.9% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 365 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 110건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 2103 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 -0.0091 (음수 3083 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=225 Primary/R_NT≥0.5=487 Exploratory/R_NT≥0.25=1167 (평균 ratio=0.267)
+    C80 gate 검증(DRC 보조): 후보 110건 중 fold별 below_c80≥8회 110 / 미달 0 (유효 C80 기록 6268건)
+    DRC 후보 농도 중앙값 2.7697 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 3.7745 vs 유지 EDS 19.5890 µg/kg (1% TOC 정규화)
+
+  CHLs: N=6048
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=704 NEDS=4353 제외(합의)=991 [metal_only=371 unattr_only=329 both=291] (제거율 58.5%) → TEL=4.3342 PEL=16.9249
+    ⚠️ 제거율 58.5% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 332 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 271건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 3065 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0183 (음수 2967 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=329 Primary/R_NT≥0.5=715 Exploratory/R_NT≥0.25=1199 (평균 ratio=0.348)
+    C80 gate 검증(DRC 보조): 후보 271건 중 fold별 below_c80≥8회 271 / 미달 0 (유효 C80 기록 6048건)
+    DRC 후보 농도 중앙값 4.2019 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 2.3380 vs 유지 EDS 12.0653 µg/kg (1% TOC 정규화)
+
+  PCBs: N=5754
+    Primary (v5.4 2규칙 합의: 금속우세 ∪ 무귀속, ≥8/10): EDS=839 NEDS=4091 제외(합의)=824 [metal_only=272 unattr_only=390 both=162] (제거율 49.5%) → TEL=14.7016 PEL=56.6121
+    ⚠️ 제거율 49.5% > 15% → applicability_pass=False (적용성 한계 표시). primary_excluded는 설계대로 유지 적용됨 — 보고 시 명시할 것
+    Sensitivity (non_target dominant): 709 시료 (혼합독성 우세, 제외 아님)
+    DRC 보조진단: drc_inconsistent 후보 125건 (Primary 제거 아님, 참고용)
+    대상물질 독성 기여 안정(SHAP_target<0 ≥80%): 3565 시료
+    Ablation: 금속 포함 시 OOF 예측 평균 변화 +0.0220 (음수 2825 시료)
+    Sensitivity Ratio: Strict/R_NT≥1.0=290 Primary/R_NT≥0.5=676 Exploratory/R_NT≥0.25=1333 (평균 ratio=0.813)
+    C80 gate 검증(DRC 보조): 후보 125건 중 fold별 below_c80≥8회 125 / 미달 0 (유효 C80 기록 5754건)
+    DRC 후보 농도 중앙값 8.8660 µg/kg (1% TOC 정규화)
+    SHAP Primary 제외자료: 제외 EDS 농도 중앙값 9.6714 vs 유지 EDS 50.3578 µg/kg (1% TOC 정규화)
+
+======================================================================
+[Step 3] EDS/NEDS → TEL/PEL — Integrated
+======================================================================
+
+▶ DDTs (N=5487, 선별 5종: ['Ampelisca abdita', 'Strongylocentrotus purpuratus', 'Dendraster excentricus', 'Arbacia punctulata', 'Haliotis rufescens'])
+  EDS: 1039, NEDS: 4448
+  TEL = 5.7861, PEL = 20.8765  (CCME: 1.19/4.77)
+
+▶ CHLs (N=5057, 선별 5종: ['Ampelisca abdita', 'Leptocheirus plumulosus', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens'])
+  EDS: 704, NEDS: 4353
+  TEL = 4.3342, PEL = 16.9249  (CCME: 2.26/4.79)
+
+▶ PCBs (N=4930, 선별 4종: ['Ampelisca abdita', 'Strongylocentrotus purpuratus', 'Arbacia punctulata', 'Haliotis rufescens'])
+  EDS: 839, NEDS: 4091
+  TEL = 14.7016, PEL = 56.6121  (CCME: 21.5/189)
+
+======================================================================
+[Step 4] 신뢰도 평가 — Integrated
+======================================================================
+
+  DDTs:
+    TEL=5.79 (CCME 1.19, 비율 4.86x)
+    PEL=20.88 (CCME 4.77, 비율 4.38x)
+    ROC-AUC=0.828, CV-AUC=0.833±0.009
+    TEL 민감도=0.97, 특이도=0.60
+
+  CHLs:
+    TEL=4.33 (CCME 2.26, 비율 1.92x)
+    PEL=16.92 (CCME 4.79, 비율 3.53x)
+    ROC-AUC=0.738, CV-AUC=0.745±0.008
+    TEL 민감도=0.89, 특이도=0.52
+
+  PCBs:
+    TEL=14.70 (CCME 21.5, 비율 0.68x)
+    PEL=56.61 (CCME 189.0, 비율 0.30x)
+    ROC-AUC=0.808, CV-AUC=0.823±0.008
+    TEL 민감도=0.94, 특이도=0.60
+
+======================================================================
+최종 소스별 TEL/PEL 비교표 (v5 SHAP Primary 파이프라인)
+======================================================================
+
+--- TEL 비교 ---
+Source     Integrated  NOAA  SCCWRP  CCME_ISQG  NOAA_TEL
+Substance                                               
+CHLs             4.33  4.42    5.36       2.26      2.26
+DDTs             5.79  4.62   10.53       1.19      3.89
+PCBs            14.70 11.32    9.67      21.50     22.70
+
+--- PEL 비교 ---
+Source     Integrated  NOAA  SCCWRP  CCME_PEL  NOAA_PEL
+Substance                                              
+CHLs            16.92 22.24   17.56      4.79      4.79
+DDTs            20.88 19.83   51.31      4.77     51.70
+PCBs            56.61 48.90   19.59    189.00    180.00
+
+--- TEL / CCME ISQG 비율 ---
+  NOAA: {'CHLs': np.float64(1.96), 'DDTs': np.float64(3.88), 'PCBs': np.float64(0.53)}
+  SCCWRP: {'CHLs': np.float64(2.37), 'DDTs': np.float64(8.85), 'PCBs': np.float64(0.45)}
+  Integrated: {'CHLs': np.float64(1.92), 'DDTs': np.float64(4.86), 'PCBs': np.float64(0.68)}
+
+======================================================================
+신뢰도 평가 요약 (ROC-AUC)
+======================================================================
+
+--- ROC-AUC by Source × Substance ---
+Source     Integrated  NOAA  SCCWRP
+Substance                          
+CHLs            0.738 0.779   0.863
+DDTs            0.828 0.807   0.810
+PCBs            0.808 0.764   0.790
+
+--- CV-AUC (5-fold) by Source × Substance ---
+Source     Integrated  NOAA  SCCWRP
+Substance                          
+CHLs            0.745 0.781   0.884
+DDTs            0.833 0.817   0.795
+PCBs            0.823 0.768   0.805
+
+--- TEL 민감도/특이도 ---
+  NOAA       DDTs       민감도=0.93 특이도=0.57 AUC=0.807
+  NOAA       CHLs       민감도=0.91 특이도=0.54 AUC=0.779
+  NOAA       PCBs       민감도=0.92 특이도=0.56 AUC=0.764
+  SCCWRP     DDTs       민감도=1.00 특이도=0.63 AUC=0.810
+  SCCWRP     CHLs       민감도=0.97 특이도=0.67 AUC=0.863
+  SCCWRP     PCBs       민감도=0.90 특이도=0.54 AUC=0.790
+  Integrated DDTs       민감도=0.97 특이도=0.60 AUC=0.828
+  Integrated CHLs       민감도=0.89 특이도=0.52 AUC=0.738
+  Integrated PCBs       민감도=0.94 특이도=0.60 AUC=0.808
+
+결과 저장: /tmp/pops_v54_output
+
+완료 ✅
+  NOAA       DDTs   N= 4856 TEL=4.6162 [4.3435, 4.9460] PEL=19.8269 [18.1692, 21.2591] valid=2000/2000
+  NOAA       CHLs   N= 3541 TEL=4.4208 [4.0330, 4.7957] PEL=22.2445 [20.0460, 24.1730] valid=2000/2000
+  NOAA       PCBs   N= 4004 TEL=11.3198 [10.7193, 11.8609] PEL=48.8970 [45.2652, 52.4907] valid=2000/2000
+  SCCWRP     DDTs   N=  515 TEL=10.5270 [9.8341, 11.6077] PEL=51.3136 [40.7967, 63.2418] valid=2000/2000
+  SCCWRP     CHLs   N=  479 TEL=5.3559 [4.5728, 6.4644] PEL=17.5626 [13.1593, 21.1084] valid=2000/2000
+  SCCWRP     PCBs   N=  183 TEL=9.6746 [8.6442, 10.9766] PEL=19.5866 [15.6245, 26.9685] valid=2000/2000
+  Integrated DDTs   N= 5487 TEL=5.7861 [5.5665, 6.0451] PEL=20.8765 [19.5550, 22.4209] valid=2000/2000
+  Integrated CHLs   N= 5057 TEL=4.3342 [4.1381, 4.5578] PEL=16.9249 [15.7509, 18.1890] valid=2000/2000
+  Integrated PCBs   N= 4930 TEL=14.7016 [14.1711, 15.4959] PEL=56.6121 [53.6435, 59.5601] valid=2000/2000
+
+저장: /tmp/pops_v54_output/TEL_PEL_bootstrap_CI.csv
+    Source Substance  N_total  N_EDS  N_NEDS  N_clusters                   cluster_method                                                                    group_priority  TEL_OC1pct  TEL_OC1pct_CI_low  TEL_OC1pct_CI_high  PEL_OC1pct  PEL_OC1pct_CI_low  PEL_OC1pct_CI_high Concentration_basis  n_valid_TEL  n_valid_PEL  n_iter  seed
+      NOAA      DDTs     4856    949    3907        4029 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      4.6162             4.3435              4.9460     19.8269            18.1692             21.2591   1% TOC-normalized         2000         2000    2000    42
+      NOAA      CHLs     3541    335    3206        3201 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      4.4208             4.0330              4.7957     22.2445            20.0460             24.1730   1% TOC-normalized         2000         2000    2000    42
+      NOAA      PCBs     4004    478    3526        3527 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id     11.3198            10.7193             11.8609     48.8970            45.2652             52.4907   1% TOC-normalized         2000         2000    2000    42
+    SCCWRP      DDTs      515    230     285         475 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id     10.5270             9.8341             11.6077     51.3136            40.7967             63.2418   1% TOC-normalized         2000         2000    2000    42
+    SCCWRP      CHLs      479    158     321         337 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      5.3559             4.5728              6.4644     17.5626            13.1593             21.1084   1% TOC-normalized         2000         2000    2000    42
+    SCCWRP      PCBs      183     82     101         183 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      9.6746             8.6442             10.9766     19.5866            15.6245             26.9685   1% TOC-normalized         2000         2000    2000    42
+Integrated      DDTs     5487   1039    4448        4529 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      5.7861             5.5665              6.0451     20.8765            19.5550             22.4209   1% TOC-normalized         2000         2000    2000    42
+Integrated      CHLs     5057    704    4353        4306 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id      4.3342             4.1381              4.5578     16.9249            15.7509             18.1890   1% TOC-normalized         2000         2000    2000    42
+Integrated      PCBs     4930    839    4091        4228 run_pipeline_v5._build_group_ids station_key > StudyID+Station > sample_key > SampleID > coord(round4) > record_id     14.7016            14.1711             15.4959     56.6121            53.6435             59.5601   1% TOC-normalized         2000         2000    2000    42
+PIPELINE_EXIT=0

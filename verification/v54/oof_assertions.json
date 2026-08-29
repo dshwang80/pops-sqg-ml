@@ -1,0 +1,27 @@
+{
+  "files": [
+    "Step2_7v5_OOF_Raw_Integrated_CHLs.csv",
+    "Step2_7v5_OOF_Raw_Integrated_DDTs.csv",
+    "Step2_7v5_OOF_Raw_Integrated_PCBs.csv"
+  ],
+  "n_rows": 180700,
+  "n_records": 18070,
+  "repeats_per_record_unique": [
+    10
+  ],
+  "repeat_id_values": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "duplicate_substance_record_repeat_pairs": 0,
+  "neds_excluded_count": 0,
+  "note": "record_id\ub294 \ubb3c\uc9c8\ubcc4 \ub3c5\ub9bd ID \uacf5\uac04 \u2192 \ud0a4=(substance, record_id, repeat_id). Diagnosis\uc758 N_EDS_primary=\ucd5c\uc885 \uc720\uc9c0(kept) EDS, \ucd1d \uace0\ub824=kept+excluded."
+}

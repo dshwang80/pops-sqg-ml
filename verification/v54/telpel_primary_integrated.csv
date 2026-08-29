@@ -1,0 +1,16 @@
+Source,Substance,Analysis,N,N_EDS,N_NEDS,N_Intermediate,TEL,PEL
+Integrated,DDTs,Primary,5487,1039,4448,0,5.7861,20.8765
+Integrated,DDTs,Sensitivity_Strict_RNT1.0,6262,1814,4448,0,3.4926,14.3541
+Integrated,DDTs,Sensitivity_Exploratory_RNT0.25,6081,1633,4448,0,3.5884,15.6884
+Integrated,DDTs,Sensitivity_ChemScreen_mPELQ0.5,4546,1052,3494,0,2.7301,13.3558
+Integrated,DDTs,Sensitivity_Unfiltered,6268,1820,4448,0,3.492,14.333
+Integrated,CHLs,Primary,5057,704,4353,0,4.3342,16.9249
+Integrated,CHLs,Sensitivity_Strict_RNT1.0,6030,1677,4353,0,1.8908,10.8532
+Integrated,CHLs,Sensitivity_Exploratory_RNT0.25,5900,1547,4353,0,1.9267,11.6141
+Integrated,CHLs,Sensitivity_ChemScreen_mPELQ0.5,4348,903,3445,0,2.5446,13.617
+Integrated,CHLs,Sensitivity_Unfiltered,6048,1695,4353,0,1.8719,10.8058
+Integrated,PCBs,Primary,4930,839,4091,0,14.7016,56.6121
+Integrated,PCBs,Sensitivity_Strict_RNT1.0,5753,1662,4091,0,8.1648,41.6777
+Integrated,PCBs,Sensitivity_Exploratory_RNT0.25,5716,1625,4091,0,8.3779,42.4555
+Integrated,PCBs,Sensitivity_ChemScreen_mPELQ0.5,4192,909,3283,0,6.9506,31.4024
+Integrated,PCBs,Sensitivity_Unfiltered,5754,1663,4091,0,8.1648,41.5809

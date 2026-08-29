@@ -1,0 +1,16 @@
+=== 판정표 5사례 (스킬 고정) ===
+  [PASS] EDS metal-dominant (보호 아님): expected metal=1 unattr=0 → got metal=1 unattr=0
+  [PASS] EDS metal-dominant target보다 우세: expected metal=1 unattr=1 → got metal=1 unattr=1
+  [PASS] 금속 보호방향 → 제외 금지: expected metal=0 unattr=0 → got metal=0 unattr=0
+  [PASS] target 더 우세 → 유지: expected metal=0 unattr=0 → got metal=0 unattr=0
+  [PASS] NEDS → 절대 제외 안 함: expected metal=0 unattr=0 → got metal=0 unattr=0
+
+=== NEDS 단언 (NEDS 제외 0건) ===
+  NEDS metal 발화=0, unattr 발화=0 → PASS
+
+=== count>=8 합의 (repeat별 조건 분리) ===
+  metal>=8: 0, unattr>=8: 0, 합집합 제외: 0/50
+  합집합 정합성: PASS
+
+============================================================
+RESULT: ALL_PASS

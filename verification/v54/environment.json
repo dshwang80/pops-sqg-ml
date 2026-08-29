@@ -1,0 +1,10 @@
+{
+  "commit_sha": "51b60f2eab967dd386e039fc28dbf239e073d57e",
+  "merge_base_with_main": "4a9e8f54bd1d2c5720bce11eb5ac0d1a43f59bb2",
+  "python": "3.11.15",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "numpy": "2.4.6",
+  "xgboost": "3.2.0",
+  "shap": "0.51.0",
+  "pandas": "3.0.5"
+}
