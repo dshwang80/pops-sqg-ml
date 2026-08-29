@@ -27,13 +27,15 @@ cluster 단위로 재표집(bootstrap)하여 TEL/PEL의 95% CI를 산출한다.
 config 누락 시 즉시 중단 (run_pipeline_v5.load_config fail-fast 재사용).
 """
 import sys
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-OUTPUT_DIR = REPO_ROOT / "output"
+# ★ v5.4: 파이프라인과 동일한 출력 격리 (기본은 output/, POPS_OUTPUT_DIR로 격리 가능)
+OUTPUT_DIR = Path(os.environ.get("POPS_OUTPUT_DIR", str(REPO_ROOT / "output")))
 sys.path.insert(0, str(REPO_ROOT / "code"))
 
 from run_pipeline_v5 import _build_group_ids, load_config  # noqa: E402

@@ -1,9 +1,30 @@
 {
-  "pipeline_version": "v5.3",
-  "primary_filter": "OOF TreeSHAP and Interventional SHAP consensus",
+  "pipeline_version": "v5.4",
+  "primary_filter": "v5.4 two-rule consensus (metal-dominant OR unattributed EDS), OOF y_te + 3-feature TreeSHAP",
+  "v54_rules": {
+    "metal_flag": "(y_te < 80) & (shap3_metal < 0) & (abs(shap3_metal) > abs(shap3_target))",
+    "unattr_flag": "(y_te < 80) & (shap3_target > -0.1)",
+    "primary_excluded": "(metal_flag_count >= 8) | (unattr_flag_count >= 8)",
+    "unattr_shap_threshold": -0.1,
+    "unattr_threshold_source": "original R V11.7 sqg_empirical_xgboost_shap.py L513-522 EDS_SHAP_Threshold (transplanted verbatim, no tuning)",
+    "primary_shap_source": "3-feature Primary model [target concentration, mPELQ_Metals, TOC_pct], TreeSHAP on OOF test folds",
+    "survival_source": "OOF test-fold y_te (record-level; averaging joins prohibited)",
+    "exclusion_reason_required": ["unattr_only", "metal_only", "both", "kept"]
+  },
+  "primary_feature_model": {
+    "features": ["target_conc", "mPELQ_Metals", "TOC_pct"],
+    "expanded_model_role": "sensitivity-only",
+    "oof_structure_assertions": [
+      "record-wise repeat_id unique count == n_repeats",
+      "zero duplicate (record_id, repeat_id)",
+      "all SHAP produced in matching test fold (fold-signature triple match)",
+      "zero rule fires on NEDS (survival >= 80)"
+    ]
+  },
   "ratio_tier_strict": 1.0,
   "ratio_tier_primary": 0.5,
   "ratio_tier_exploratory": 0.25,
+  "ratio_tier_role": "sensitivity-only (no longer Primary after v5.4)",
   "mpelq_screen_role": "chemical-screen-only sensitivity",
   "random_seed": 42,
   "repeat_seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
